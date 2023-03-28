@@ -1,0 +1,10 @@
+.idea
+artifacts
+config.yaml
+node_1_data
+node_2_data
+node_3_data
+node_4_data
+node_5_data
+vendor
+release
