@@ -1,4 +1,4 @@
-package ipvs
+package ipvsAgent
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ func RunAgent(agentConf conf.AgentConf) error {
 
 func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
 	ipvsList = &model.IpvsList{
-		IpvsList: make([]model.Ipvs, 0),
+		IpvsList: make([]*model.Ipvs, 0),
 	}
 	return ipvsList, err
 }

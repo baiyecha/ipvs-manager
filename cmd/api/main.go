@@ -8,6 +8,7 @@ import (
 
 	"ysf/raftsample/server"
 	"ysf/raftsample/conf"
+	"ysf/raftsample/ipvsAgent"
 )
 
 // configRaft configuration for raft node
@@ -62,6 +63,7 @@ func main() {
 	case "singleon": // all-in-one
 
 	case "agent": // 单agent
+		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
 	server.NewRaftServer(conf.Raft)
 
