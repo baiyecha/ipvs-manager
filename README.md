@@ -1,164 +1,56 @@
-# Raft Example
-
-Straightforward implementation of Raft Consensus.
-
-If you're come from [my Medium's blog](https://yusufs.medium.com/creating-distributed-kv-database-by-implementing-raft-consensus-using-golang-d0884eef2e28) 
-you should refer to this release version [v.0.0.1-alpha](https://github.com/yusufsyaifudin/raft-sample/releases/tag/v.0.0.1-alpha) or [browse the code here](https://github.com/yusufsyaifudin/raft-sample/tree/v.0.0.1-alpha).
-
-## Why Another Example?
-
-Copying statement from [another raft repo example](https://github.com/yongman/leto) that
-
-> You can have better comprehension about how `raft protocol` works if you use it. 
-
-And, yes! This is another example of implementing Raft using BadgerDB.
-
-## What the difference with another example repo?
-
-Here I try to create the very basic example, where you can create multi leader server only by running it separately using different port.
-Then, you can select one server as the Raft Leader and connect it manually using CURL or via Postman.
-This will give you better understanding how to create Raft Cluster rather than another repo which already included `join` command via program's argument or config.
-
-This example also show you how we can create the multiple server read with eventual consistency. 
-This means that we can read data from any server, but only can do writes and deletes operation through leader server.
-
-## How to run?
-
-`git clone` this project or download prebuilt executable files in Release, then set three (3) different config, for example:
-
-Then run 3 server with different program in different terminal tab:
-
-```bash
-$ SERVER_PORT=2221 RAFT_NODE_ID=node1 RAFT_PORT=1111 RAFT_VOL_DIR=node_1_data go run ysf/raftsample/cmd/api
-$ SERVER_PORT=2222 RAFT_NODE_ID=node2 RAFT_PORT=1112 RAFT_VOL_DIR=node_2_data go run ysf/raftsample/cmd/api
-$ SERVER_PORT=2223 RAFT_NODE_ID=node3 RAFT_PORT=1113 RAFT_VOL_DIR=node_3_data go run ysf/raftsample/cmd/api
+# 说明
+## 启动方式
 ```
-
-Or using prebuilt executable:
-
-```bash
-$ SERVER_PORT=2221 RAFT_NODE_ID=node1 RAFT_PORT=1111 RAFT_VOL_DIR=node_1_data ./raftsample
-$ SERVER_PORT=2222 RAFT_NODE_ID=node2 RAFT_PORT=1112 RAFT_VOL_DIR=node_2_data ./raftsample
-$ SERVER_PORT=2223 RAFT_NODE_ID=node3 RAFT_PORT=1113 RAFT_VOL_DIR=node_3_data ./raftsample
+SERVER_PORT=2221 RAFT_NODE_ID=node1 RAFT_PORT=1111 RAFT_VOL_DIR=node_1_data ./ipvs-manager
+SERVER_PORT=2222 RAFT_NODE_ID=node2 RAFT_PORT=1112 RAFT_VOL_DIR=node_2_data RAFT_LEADER=127.0.0.1:2221 ./ipvs-manager
+SERVER_PORT=2223 RAFT_NODE_ID=node3 RAFT_PORT=1113 RAFT_VOL_DIR=node_3_data RAFT_LEADER=127.0.0.1:2221 ./ipvs-manager
 ```
+参数说明
+* SERVER_POR http的端口
+* RAFT_NODE_ID 集群中的id,保持唯一性就行
+* RAFT_VOL_DIR raft文件和数据库文件持久化的目录
+* RAFT_LEADER 当节点作为个新的成员加入到集群中时，需要指定leader的http服务地址，启动后会自动join到集群中，记住是新的节点，重启的节点由于已经保留了集群的信息，不需要该参数
 
-## Creating clusters
+## raft 模块说明
+1. server
+server模块提供一个http服务，提供两种接口
+a. 数据库的增删查改和web界面
+b. raft集群的管理接口
 
-After running the each server, we have 3 servers:
-
-* http://localhost:2221 with raft server localhost:1111
-* http://localhost:2222 with raft server localhost:1112
-* http://localhost:2223 with raft server localhost:1113
-
-We can check using `/raft/stats` for each server and see that all server initiated as Leader.
-
-Now, manually pick one server as the real Leader, for example http://localhost:2221 with raft server localhost:1111.
-Using Postman, we can register http://localhost:2222 as a Follower to http://localhost:2221 as a Leader.
-
-```curl
-curl --location --request POST 'localhost:2221/raft/join' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"node_id": "node_2", 
-	"raft_address": "127.0.0.1:1112"
-}'
+2. fsm
+fsm 被称作有限状态机，是写入数据的一个具体的实现，在golang里面，他说第一个interface，需要自己实现一套
 ```
-
-And doing the same to register http://localhost:2223 as a Follower to http://localhost:2221 as a Leader:
-
-```curl
-curl --location --request POST 'localhost:2221/raft/join' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"node_id": "node_3", 
-	"raft_address": "127.0.0.1:1113"
-}'
+/*FSM provides an interface that can be implemented by
+clients to make use of the replicated log.*/
+type FSM interface {
+    /* Apply log is invoked once a log entry is committed.
+    It returns a value which will be made available in the
+    ApplyFuture returned by Raft.Apply method if that
+    method was called on the same Raft node as the FSM.*/
+    Apply(*Log) interface{}
+    // Snapshot is used to support log compaction. This call should
+    // return an FSMSnapshot which can be used to save a point-in-time
+    // snapshot of the FSM. Apply and Snapshot are not called in multiple
+    // threads, but Apply will be called concurrently with Persist. This means
+    // the FSM should be implemented in a fashion that allows for concurrent
+    // updates while a snapshot is happening.
+    Snapshot() (FSMSnapshot, error)
+    // Restore is used to restore an FSM from a snapshot. It is not called
+    // concurrently with any other command. The FSM must discard all previous
+    // state.
+    Restore(io.ReadCloser) error
+}
 ```
+1. Apply 方法我们采用使用内嵌的kv数据库badger实现，持久化到磁盘，这里也不是直接写入，而是使用raft的Apply方式，为这次set操作生成一个log entry，这里面会根据raft的内部协议，在各个节点之间进行通信协作，确保最后这条log 会在整个集群的节点里面提交或者失败。
+2. Snapshot 快照，因为我们直接使用的持久化kv数据库，已经存盘保存了，所以不需要使用到快照功能
+3. Restore 服务重启的时候，会先读取本地的快照来恢复数据，在FSM里面定义的Restore函数会被调用，我们将数据写入到kv数据库里面即可。
 
-> What happen when we do cURL?
->
-> When we running the cURL, we send the data of `node_id` and `raft_address` that being registered as a Voter.
-> We say `Voter` because we don't know the real Leader yet.
-> 
->
-> In server http://localhost:2221 it will add the configuration stating that http://localhost:2222 and http://localhost:2223
-> now is a Voter.
-> After add the Voter, raft will choose the server http://localhost:2221 as the Leader.
->
-> Adding Voter must be done in Leader server, that's why we always send to the same server for adding server.
-> You can see that we always call port 2221 both for adding port 2222 or 2223
+## 流程说明
+1. 集群最开始的时候只有一个节点，我们让第一个节点通过bootstrap的方式启动，它启动后成为leader。
+2. 后续的节点启动的时候需要加入集群，启动的时候指定第一个节点的地址，并发送请求加入集群，这里我们定义成直接通过http请求。
+3. 先启动的节点收到请求后，获取对方的地址（指raft集群内部通信的tcp地址），然后调用AddVoter把这个节点加入到集群即可。
+申请加入的节点会进入follower状态，这以后集群节点之间就可以正常通信，leader也会把数据同步给follower。
 
-Then, check each of this endpoint, it will return the status that the port 2221 is now the only leader and the other is just a follower:
-
-* http://localhost:2221/raft/stats
-* http://localhost:2222/raft/stats
-* http://localhost:2223/raft/stats
-
-Now, raft cluster already created!
-
-## Using Docker
-
-First, build the image using command: `docker build -t ysf/raftsample .`
-
-Then, run using docker compose `docker-compose up`.
-
-To connect between cluster, use docker gateway IP, see using `docker network inspect bridge`,
-so instead of 
-
-```curl
-curl --location --request POST 'localhost:2221/raft/join' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"node_id": "node_2", 
-	"raft_address": "127.0.0.1:1112"
-}'
-```
-
-You must change the `127.0.0.1` to Bridge IP from docker inspect command, for example:
-
-```curl
-curl --location --request POST 'localhost:2221/raft/join' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"node_id": "node_2", 
-	"raft_address": "172.17.0.1:1112"
-}'
-```
-
-## Store, Get and Delete Data
-
-As already mentioned before, this cluster will create a simple distributed KV storage with eventual consistency in read.
-This means, all writes command (Store and Delete) **must** redirected to the Leader server, since the Leader server is the only one
-that can do `Apply` in raft protocol. After doing Store and Delete, we can make sure that the Raft already committed the message to all Follower servers.
-
-Then, in `Get` method in order to fetch data, we can use the internal database instead calling `raft.Apply`. 
-This makes all Get command can be targeted to any server, not only the Leader.
-
-So, why we call it _eventual consistency in read_ while we can make sure that every after Store and Delete response returned it means that the raft already applied the logs to n quorum servers?
-
-That is because while reading data directly in badgerDB we only use read transaction. From BadgerDB's Readme:
-
-> You cannot perform any writes or deletes within this transaction. Badger ensures that you get a consistent view of the database within this closure. Any writes that happen elsewhere after the transaction has started, will not be seen by calls made within the closure.
-
-To do store data, use this cURL (change `raft.leader.server` to the Leader HTTP address, in this example http://localhost:2221):
-
-```curl
-curl --location --request POST 'raft.leader.server/store' \
---header 'Content-Type: application/json' \
---data-raw '{
-	"key": "key",
-	"value": "value"
-}'
-```
-
-To get data, use this (change `any.raft.server` to any HTTP address, it can be port 2221, 2222 or 2223):
-
-```curl
-curl --location --request GET 'any.raft.server/store/key'
-```
-
-To delete data, use this (change `raft.leader.server` to the Leader HTTP address, in this example http://localhost:2221):
-
-```curl
-curl --location --request DELETE 'raft.leader.server/store/key'
-```
+## 参考资料
+* https://zhuanlan.zhihu.com/p/58048906
+* https://yusufs.medium.com/creating-distributed-kv-database-by-implementing-raft-consensus-using-golang-d0884eef2e28
