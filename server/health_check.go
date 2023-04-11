@@ -11,6 +11,7 @@ import (
 
 	"ysf/raftsample/model"
 	"ysf/raftsample/server/store_handler"
+	"ysf/raftsample/constant"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
@@ -35,7 +36,7 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 				// 先拿出所有的ipvs信息
 				txn := badgerDB.NewTransaction(false)
 				ipvsList := &model.IpvsList{}
-				item, err := txn.Get([]byte("ipvs"))
+				item, err := txn.Get([]byte(constant.IpvsStroreKey))
 				value := make([]byte, 0)
 				isChange := false
 				if err != nil {

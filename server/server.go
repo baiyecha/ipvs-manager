@@ -35,9 +35,12 @@ const (
 	raftLogCacheSize = 512
 )
 
+func NewHttpServer(conf conf.ConfigRaft){
 
-func NewRaftServer(conf conf.ConfigRaft){
+}
 
+// port is http port
+func NewRaftServer(conf conf.ConfigRaft, port int){
 	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
 	badgerDB, err := badger.Open(badgerOpt)
 	if err != nil {
@@ -107,7 +110,7 @@ func NewRaftServer(conf conf.ConfigRaft){
 		}
 	}
 
-	srv := NewHttp(fmt.Sprintf(":%d", conf.Port), badgerDB, raftServer)
+	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer)
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}

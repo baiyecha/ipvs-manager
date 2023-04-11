@@ -35,5 +35,10 @@ func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
 	ipvsList = &model.IpvsList{
 		IpvsList: make([]*model.Ipvs, 0),
 	}
+	for _,  addr := range address {
+		// 使用grpc进行通信，获取当前ipvs信息列表
+		fmt.Println(addr)
+
+	}
 	return ipvsList, err
 }

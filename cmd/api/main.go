@@ -65,7 +65,7 @@ func main() {
 	case "agent": // 单agent
 		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
-	server.NewRaftServer(conf.Raft)
+	server.NewRaftServer(conf.Raft, conf.Server.Port)
 
 	}
 }

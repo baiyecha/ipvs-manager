@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/labstack/echo/v4"
 
+	"ysf/raftsample/constant"
 	"ysf/raftsample/fsm"
+	"ysf/raftsample/model"
 )
 
 // requestStore payload for storing new data in raft cluster
@@ -42,36 +44,7 @@ func (h handler) Store(eCtx echo.Context) error {
 		})
 	}
 
-	// payload := fsm.CommandPayload{
-	// 	Operation: "SET",
-	// 	Key:       form.Key,
-	// 	Value:     form.Value,
-	// }
-
 	err := Store(h.raft, form.Key, form.Value)
-	// data, err := json.Marshal(payload)
-	//
-	//	if err != nil {
-	//		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
-	//			"error": fmt.Sprintf("error preparing saving data payload: %s", err.Error()),
-	//		})
-	//	}
-	//
-	// applyFuture := h.raft.Apply(data, 500*time.Millisecond)
-	//
-	//	if err := applyFuture.Error(); err != nil {
-	//		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
-	//			"error": fmt.Sprintf("error persisting data in raft cluster: %s", err.Error()),
-	//		})
-	//	}
-	//
-	// _, ok := applyFuture.Response().(*fsm.ApplyResponse)
-	//
-	//	if !ok {
-	//		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
-	//			"error": fmt.Sprintf("error response is not match apply response"),
-	//		})
-	//	}
 	if err != nil {
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": err,
@@ -84,8 +57,39 @@ func (h handler) Store(eCtx echo.Context) error {
 	})
 }
 
-func Store(r *raft.Raft, key string , value interface{}) error {
-		payload := fsm.CommandPayload{
+func (h handler) Update(eCtx echo.Context) error {
+	form := model.IpvsList{}
+	fmt.Print(1)
+	if err := eCtx.Bind(&form); err != nil {
+		fmt.Print(err)
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": fmt.Sprintf("error binding: %s", err.Error()),
+		})
+	}
+	fmt.Print(2)
+	if h.raft.State() != raft.Leader {
+		fmt.Print(h.raft.State())
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": "not the leader",
+		})
+	}
+	fmt.Print(3)
+	err := Store(h.raft, constant.IpvsStroreKey, form)
+	if err != nil {
+		fmt.Print("111", err)
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": err,
+		})
+	}
+	fmt.Print(4)
+	return eCtx.JSON(http.StatusOK, map[string]interface{}{
+		"message": "success persisting data",
+		"data":    form,
+	})
+}
+
+func Store(r *raft.Raft, key string, value interface{}) error {
+	payload := fsm.CommandPayload{
 		Operation: "SET",
 		Key:       key,
 		Value:     value,
