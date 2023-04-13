@@ -6,33 +6,32 @@ import (
 
 	"github.com/spf13/viper"
 
-	"ysf/raftsample/server"
 	"ysf/raftsample/conf"
 	"ysf/raftsample/ipvsAgent"
+	"ysf/raftsample/server"
 )
 
 // configRaft configuration for raft node
 
 const (
-	serverType  = "SERVER_TYPE"  // 服务是何类型根据类型启动不同的功能
-	serverPort  = "SERVER_PORT"  // http服务的端口
-	raftNodeId  = "RAFT_NODE_ID" // node的id
-	raftPort    = "RAFT_PORT"    // raft监听端口
-	raftVolDir  = "RAFT_VOL_DIR" // raft 信息和kv数据库的文件目录
-	raftLeader  = "RAFT_LEADER"  // 如果是leader，则为空，如果是follower,则需要填leader的节点信息
-	grpcAddress = "GRPC_ADDREDD" // agent对接的grpc地址列表
+	serverType       = "SERVER_TYPE"  // 服务是何类型根据类型启动不同的功能
+	serverPort       = "SERVER_PORT"  // http服务的端口
+	raftNodeId       = "RAFT_NODE_ID" // node的id
+	raftVolDir       = "RAFT_VOL_DIR" // raft 信息和kv数据库的文件目录
+	grpcAddress      = "GRPC_ADDREDD" // agent对接的grpc地址列表
+	clusterAddress   = "CLUSTER"      // 集群所有节点的http地址，用对接raft
+	clusterAdvertise = "ADVERTIES"    // 集群raft广播出来的地址，集群之间用这个地址通信
 )
 
 var confKeys = []string{
 	serverType,
 	serverPort,
 	raftNodeId,
-	raftPort,
 	raftVolDir,
-	raftLeader,
 	grpcAddress,
+	clusterAddress,
+	clusterAdvertise,
 }
-
 
 // main entry point of application start
 // run using CONFIG=config.yaml ./program
@@ -43,15 +42,17 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	cluster := strings.Split(v.GetString(clusterAddress), ",")
 	conf := conf.Config{
 		Server: conf.ConfigServer{
-			Port: v.GetInt(serverPort),
+			Port:             v.GetInt(serverPort),
+			ClusterAddress:   cluster,
 		},
 		Raft: conf.ConfigRaft{
-			NodeId:     v.GetString(raftNodeId),
-			Port:       v.GetInt(raftPort),
-			VolumeDir:  v.GetString(raftVolDir),
-			RaftLeader: v.GetString(raftLeader),
+			NodeId:         v.GetString(raftNodeId),
+			VolumeDir:      v.GetString(raftVolDir),
+			ClusterAddress: cluster,
+			ClusterAdvertise: v.GetString(clusterAdvertise),
 		},
 		Agent: conf.AgentConf{
 			GrpcAddress: strings.Split(v.GetString(grpcAddress), ","),
@@ -65,7 +66,7 @@ func main() {
 	case "agent": // 单agent
 		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
-	server.NewRaftServer(conf.Raft, conf.Server.Port)
+		server.NewServer(conf.Raft, conf.Server.Port)
 
 	}
 }

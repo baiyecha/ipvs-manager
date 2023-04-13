@@ -12,6 +12,7 @@ import (
 	"time"
 	"ysf/raftsample/conf"
 	"ysf/raftsample/fsm"
+	"ysf/raftsample/utils"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
@@ -35,12 +36,9 @@ const (
 	raftLogCacheSize = 512
 )
 
-func NewHttpServer(conf conf.ConfigRaft){
-
-}
 
 // port is http port
-func NewRaftServer(conf conf.ConfigRaft, port int){
+func NewServer(conf conf.ConfigRaft, port int){
 	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
 	badgerDB, err := badger.Open(badgerOpt)
 	if err != nil {
@@ -52,8 +50,10 @@ func NewRaftServer(conf conf.ConfigRaft, port int){
 			_, _ = fmt.Fprintf(os.Stderr, "error close badgerDB: %s\n", err.Error())
 		}
 	}()
-
-	raftBinAddr := fmt.Sprintf(":%d", conf.Port)
+	_, raftBinAddr, err  := net.SplitHostPort(conf.ClusterAdvertise)
+	if err != nil{
+		panic(err)
+	}
 
 	raftConf := raft.DefaultConfig()
 	raftConf.LocalID = raft.ServerID(conf.NodeId)
@@ -97,20 +97,21 @@ func NewRaftServer(conf conf.ConfigRaft, port int){
 		Servers: []raft.Server{
 			{
 				ID:      raft.ServerID(conf.NodeId),
-				Address: transport.LocalAddr(),
+				Address: transport.DecodePeer([]byte(conf.ClusterAdvertise)),
 			},
 		},
 	}
-	if conf.RaftLeader == "" { // 如果是空，则以leader启动，否则以follower身份加入集群
+	leraderAddr := utils.GetLeader(conf.ClusterAddress)
+	if leraderAddr == "" { // 如果是空，则以leader启动，否则以follower身份加入集群
 		raftServer.BootstrapCluster(configuration)
 	} else {
-		err := joinRaftCluster(conf.NodeId, string(configuration.Servers[0].Address), conf.RaftLeader)
+		err := joinRaftCluster(conf.NodeId, string(configuration.Servers[0].Address), leraderAddr)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer)
+	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer, conf.ClusterAddress)
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}

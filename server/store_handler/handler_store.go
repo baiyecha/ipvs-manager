@@ -9,10 +9,12 @@ import (
 
 	"github.com/hashicorp/raft"
 	"github.com/labstack/echo/v4"
+	"github.com/levigross/grequests"
 
 	"ysf/raftsample/constant"
 	"ysf/raftsample/fsm"
 	"ysf/raftsample/model"
+	"ysf/raftsample/utils"
 )
 
 // requestStore payload for storing new data in raft cluster
@@ -59,29 +61,50 @@ func (h handler) Store(eCtx echo.Context) error {
 
 func (h handler) Update(eCtx echo.Context) error {
 	form := model.IpvsList{}
-	fmt.Print(1)
 	if err := eCtx.Bind(&form); err != nil {
 		fmt.Print(err)
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": fmt.Sprintf("error binding: %s", err.Error()),
 		})
 	}
-	fmt.Print(2)
-	if h.raft.State() != raft.Leader {
-		fmt.Print(h.raft.State())
-		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
-			"error": "not the leader",
+	if h.raft.State() == raft.Leader {
+		err := Store(h.raft, constant.IpvsStroreKey, form)
+		if err != nil {
+			fmt.Print("111", err)
+			return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+				"error": err,
+			})
+		}
+		return eCtx.JSON(http.StatusOK, map[string]interface{}{
+			"message": "success persisting data",
+			"data":    form,
 		})
 	}
-	fmt.Print(3)
-	err := Store(h.raft, constant.IpvsStroreKey, form)
-	if err != nil {
-		fmt.Print("111", err)
+	// 如果不是leader ，则发送请求给leader进行操作
+	leaderAddr := utils.GetLeader(h.clusterAddress)
+	if leaderAddr == "" {
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": fmt.Sprintf("not found leader"),
+		})
+	}
+	res, err := grequests.Post(leaderAddr+"/store/", &grequests.RequestOptions{
+		JSON: requestStore{
+			Key:   constant.IpvsStroreKey,
+			Value: form,
+		},
+	})
+	if err != nil  {
+		fmt.Print(err)
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": err,
 		})
 	}
-	fmt.Print(4)
+	if res.StatusCode != 200 {
+		fmt.Print(res.StatusCode)
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": err,
+		})
+	}
 	return eCtx.JSON(http.StatusOK, map[string]interface{}{
 		"message": "success persisting data",
 		"data":    form,

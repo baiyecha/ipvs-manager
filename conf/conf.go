@@ -3,14 +3,15 @@ package conf
 
 type ConfigRaft struct {
 	NodeId     string `mapstructure:"node_id"`
-	Port       int    `mapstructure:"port"`
 	VolumeDir  string `mapstructure:"volume_dir"`
-	RaftLeader string `mapstructure:"raft_leader"`
+	ClusterAddress []string `mapstructure:"cluster_address"`
+	ClusterAdvertise string `mapstructure:"cluster_advertise"`
 }
 
 // configServer configuration for HTTP server
 type ConfigServer struct {
 	Port int `mapstructure:"port"`
+	ClusterAddress []string `mapstructure:"cluster_address"`
 }
 type AgentConf struct {
 	GrpcAddress []string `mapstructure:"grpc_address"`

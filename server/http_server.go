@@ -67,7 +67,7 @@ type IpvsList struct {
 }
 
 // New return new server
-func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft) *srv {
+func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) *srv {
 	e := echo.New()
 	t := template.Must(template.New("index.html").Parse(`
 <!doctype html>
@@ -349,7 +349,7 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft) *srv {
 	e.GET("/raft/stats", raftHandler.StatsRaftHandler)
 
 	// Store server
-	storeHandler := store_handler.New(r, badgerDB)
+	storeHandler := store_handler.New(r, badgerDB, clusterAddress)
 	e.POST("/store", storeHandler.Store)
 	e.GET("/store/:key", storeHandler.Get)
 	e.DELETE("/store/:key", storeHandler.Delete)

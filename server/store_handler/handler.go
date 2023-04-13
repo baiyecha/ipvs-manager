@@ -7,13 +7,15 @@ import (
 
 // handler struct handler
 type handler struct {
-	raft *raft.Raft
-	db   *badger.DB
+	raft           *raft.Raft
+	db             *badger.DB
+	clusterAddress []string
 }
 
-func New(raft *raft.Raft, db *badger.DB) *handler {
+func New(raft *raft.Raft, db *badger.DB, clusterAddress []string) *handler {
 	return &handler{
-		raft: raft,
-		db:   db,
+		raft:           raft,
+		db:             db,
+		clusterAddress: clusterAddress,
 	}
 }

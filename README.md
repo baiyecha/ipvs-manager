@@ -18,7 +18,7 @@ a. 数据库的增删查改和web界面
 b. raft集群的管理接口
 
 2. fsm
-fsm 被称作有限状态机，是写入数据的一个具体的实现，在golang里面，他说第一个interface，需要自己实现一套
+fsm 被称作有限状态机，是写入数据的一个具体的实现，在golang里面，他是一个interface，需要自己实现一套
 ```
 /*FSM provides an interface that can be implemented by
 clients to make use of the replicated log.*/
