@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"ysf/raftsample/model"
+	"baiyecha/ipvs-manager/model"
 
 	"github.com/hashicorp/raft"
 	"github.com/levigross/grequests"
@@ -15,10 +15,10 @@ func GetLeader(address []string) string {
 			continue
 		}
 		resp := &model.RaftStatsResp{}
-		if err = res.JSON(resp);err != nil{
+		if err = res.JSON(resp); err != nil {
 			continue
 		}
-		if resp.Data.State == raft.Leader.String(){
+		if resp.Data.State == raft.Leader.String() {
 			leaderAddr = addr
 			break
 		}

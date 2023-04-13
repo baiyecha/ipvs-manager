@@ -1,4 +1,4 @@
-PACKAGE_NAME := ysf/raftsample
+PACKAGE_NAME := baiyecha/ipvs-manager
 
 # compress golang binary size: https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/
 build: install

@@ -1,4 +1,4 @@
-module ysf/raftsample
+module baiyecha/ipvs-manager
 
 go 1.14
 

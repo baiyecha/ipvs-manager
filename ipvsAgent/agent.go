@@ -5,8 +5,8 @@ import (
 	"runtime/debug"
 	"time"
 
-	"ysf/raftsample/conf"
-	"ysf/raftsample/model"
+	"baiyecha/ipvs-manager/conf"
+	"baiyecha/ipvs-manager/model"
 )
 
 func RunAgent(agentConf conf.AgentConf) error {
@@ -20,12 +20,12 @@ func RunAgent(agentConf conf.AgentConf) error {
 			}()
 			for {
 				// 定时请求server端，拿到ipvs信息
-				 ipvsList , err := getIpvs(agentConf.GrpcAddress)
-				 if err != nil{
-					 fmt.Print("any addr is connection fail")
-				 }
-				 HandleIpvs(ipvsList)
-				 time.Sleep(5* time.Second)
+				ipvsList, err := getIpvs(agentConf.GrpcAddress)
+				if err != nil {
+					fmt.Print("any addr is connection fail")
+				}
+				HandleIpvs(ipvsList)
+				time.Sleep(5 * time.Second)
 			}
 		}()
 	}
@@ -35,7 +35,7 @@ func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
 	ipvsList = &model.IpvsList{
 		IpvsList: make([]*model.Ipvs, 0),
 	}
-	for _,  addr := range address {
+	for _, addr := range address {
 		// 使用grpc进行通信，获取当前ipvs信息列表
 		fmt.Println(addr)
 

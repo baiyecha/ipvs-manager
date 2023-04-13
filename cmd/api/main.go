@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"ysf/raftsample/conf"
-	"ysf/raftsample/ipvsAgent"
-	"ysf/raftsample/server"
+	"baiyecha/ipvs-manager/conf"
+	"baiyecha/ipvs-manager/ipvsAgent"
+	"baiyecha/ipvs-manager/server"
 )
 
 // configRaft configuration for raft node
@@ -45,13 +45,13 @@ func main() {
 	cluster := strings.Split(v.GetString(clusterAddress), ",")
 	conf := conf.Config{
 		Server: conf.ConfigServer{
-			Port:             v.GetInt(serverPort),
-			ClusterAddress:   cluster,
+			Port:           v.GetInt(serverPort),
+			ClusterAddress: cluster,
 		},
 		Raft: conf.ConfigRaft{
-			NodeId:         v.GetString(raftNodeId),
-			VolumeDir:      v.GetString(raftVolDir),
-			ClusterAddress: cluster,
+			NodeId:           v.GetString(raftNodeId),
+			VolumeDir:        v.GetString(raftVolDir),
+			ClusterAddress:   cluster,
 			ClusterAdvertise: v.GetString(clusterAdvertise),
 		},
 		Agent: conf.AgentConf{

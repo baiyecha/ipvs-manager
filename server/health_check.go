@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"runtime/debug"
 	"time"
 
-	"ysf/raftsample/model"
-	"ysf/raftsample/server/store_handler"
-	"ysf/raftsample/constant"
+	"baiyecha/ipvs-manager/constant"
+	"baiyecha/ipvs-manager/model"
+	"baiyecha/ipvs-manager/server/store_handler"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
+	"github.com/levigross/grequests"
 )
 
 func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
@@ -61,13 +63,12 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 				}
 				// 检测所有ipvs 后端是否存活
 				_, isChange = doHealthCheck(ipvsList)
-				if isChange{
-					err :=store_handler.Store(r, "ipvs", ipvsList)
-					if err != nil{
-					fmt.Printf("update ipvs data error: %s", err.Error())
-					goto done
+				if isChange {
+					err := store_handler.Store(r, "ipvs", ipvsList)
+					if err != nil {
+						fmt.Printf("update ipvs data error: %s", err.Error())
+						goto done
 					}
-
 				}
 			done:
 				_ = txn.Commit()
@@ -79,14 +80,27 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 
 func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 	isChange := false
-	for ipvsDataIndex := range ipvsList.IpvsList{
-		ipvsData:= ipvsList.IpvsList[ipvsDataIndex]
-		for  backendIndex:= range ipvsData.Backends{
-			 backend := ipvsData.Backends[backendIndex]
-			ip, port ,_  := net.SplitHostPort(backend.Addr)
-			status := telnet(ipvsData.Protocol, ip, port)
-			if status != backend.Status{
-				backend.Status =  status
+	for ipvsDataIndex := range ipvsList.IpvsList {
+		ipvsData := ipvsList.IpvsList[ipvsDataIndex]
+		for backendIndex := range ipvsData.Backends {
+			backend := ipvsData.Backends[backendIndex]
+			status := 1
+			switch backend.CheckType {
+			case 0: // tcp
+				addr := backend.Addr
+				if backend.CheckInfo != "" {
+					addr = backend.CheckInfo
+				}
+				ip, port, _ := net.SplitHostPort(addr)
+				status = telnet(ipvsData.Protocol, ip, port)
+			case 1: // http
+				status = httpCheck(backend.CheckInfo)
+			default:
+				backend.Status = 1
+
+			}
+			if status != backend.Status {
+				backend.Status = status
 				isChange = true
 			}
 		}
@@ -96,24 +110,40 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 
 // @protocol tcp or udp
 // @return 0 succeed 1 failed
-func telnet(protocol string, host string, port string)int {
-     timeout := time.Second
-     conn, err := net.DialTimeout(protocol, host +":" + port, timeout)
-	 conn.Close()
-     if err != nil {
-        fmt.Println(err)
+func telnet(protocol string, host string, port string) int {
+	timeout := time.Second
+	conn, err := net.DialTimeout(protocol, host+":"+port, timeout)
+	conn.Close()
+	if err != nil {
+		fmt.Println(err)
 		return 1
-     } else {
-        msg, _, err := bufio.NewReader(conn).ReadLine()
-        if err != nil {
-           if err == io.EOF {
-              fmt.Print(host +"" + port +" - Open!")
-			  return 0
-           }
-        } else {
-           fmt.Print(host +"" + port +" -" + string(msg))
-		   return 1
-        }
-   }
-   return 1
- }
+	} else {
+		msg, _, err := bufio.NewReader(conn).ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				fmt.Print(host + "" + port + " - Open!")
+				return 0
+			}
+		} else {
+			fmt.Print(host + "" + port + " -" + string(msg))
+			return 1
+		}
+	}
+	return 1
+}
+
+func httpCheck(url string) int {
+	res, err := grequests.Get(url, &grequests.RequestOptions{})
+	if err != nil {
+		fmt.Print(err)
+		return 1
+	}
+	if res.StatusCode == http.StatusOK {
+		fmt.Printf("check %s is ok!", url)
+		return 0
+	} else {
+		fmt.Printf("check %s is failed! status: %d", url, res.StatusCode)
+		return 1
+	}
+	return 1
+}

@@ -1,21 +1,23 @@
 package model
 
-type Ipvs struct{
-	VIP string `json:"vip"`
-	Backends []*Backend `json:"backends"`
-	Protocol string `json:"protocol"`
-	SchedName string `json:"sched_name"`
+type Ipvs struct {
+	VIP       string     `json:"vip"`
+	Backends  []*Backend `json:"backends"`
+	Protocol  string     `json:"protocol"`
+	SchedName string     `json:"sched_name"`
 }
 
-type Backend struct{
-	Addr string `json:"addr"`
-	Weight int `json:"weight"`
-	Status int `json:"status"` // ipvs后端的健康状态，1为不健康，0为健康
+type Backend struct {
+	Addr      string `json:"addr"`
+	Weight    int    `json:"weight"`
+	Status    int    `json:"status"`      // ipvs后端的健康状态，1为不健康，0为健康
+	CheckType int    `json:"check_type"`  // 0 为tcp 1为http
+	CheckInfo string `json:"check_info"` // 检查的地址，如果type是tcp，那么使用tcp检查，这里为空的时候用addr进行，如果是http，这这里必须为一个可以get的http的地址
 }
 
-type IpvsList struct{
+type IpvsList struct {
 	IpvsList []*Ipvs `json:"ipvs_list"`
-	Json string `json:"-"`
+	Json     string  `json:"-"`
 }
 
 // 请求raft的数据结构
@@ -40,6 +42,6 @@ type RaftStatsData struct {
 	Term                     string `json:"term"`
 }
 type RaftStatsResp struct {
-	Data    RaftStatsData   `json:"data"`
-	Message string `json:"message"`
+	Data    RaftStatsData `json:"data"`
+	Message string        `json:"message"`
 }

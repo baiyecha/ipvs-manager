@@ -15,7 +15,7 @@ COPY . .
 
 # Build the Go app
 RUN GO111MODULE=on CGO_ENABLED=0 GOOS=linux \
-    go build -mod=mod -o raftsample ysf/raftsample/cmd/api
+    go build -mod=mod -o raftsample baiyecha/ipvs-manager/cmd/api
 
 
 FROM scratch

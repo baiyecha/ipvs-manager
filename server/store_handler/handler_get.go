@@ -8,8 +8,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"ysf/raftsample/constant"
-	"ysf/raftsample/model"
+	"baiyecha/ipvs-manager/constant"
+	"baiyecha/ipvs-manager/model"
 )
 
 // Get will fetched data from badgerDB where the raft use to store data.

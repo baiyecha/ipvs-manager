@@ -10,14 +10,16 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"ysf/raftsample/conf"
-	"ysf/raftsample/fsm"
-	"ysf/raftsample/utils"
+
+	"baiyecha/ipvs-manager/conf"
+	"baiyecha/ipvs-manager/fsm"
+	"baiyecha/ipvs-manager/utils"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
 )
+
 const (
 	// The maxPool controls how many connections we will pool.
 	maxPool = 3
@@ -36,22 +38,9 @@ const (
 	raftLogCacheSize = 512
 )
 
-
-// port is http port
-func NewServer(conf conf.ConfigRaft, port int){
-	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
-	badgerDB, err := badger.Open(badgerOpt)
+func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) {
+	_, raftBinAddr, err := net.SplitHostPort(conf.ClusterAdvertise)
 	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		if err := badgerDB.Close(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error close badgerDB: %s\n", err.Error())
-		}
-	}()
-	_, raftBinAddr, err  := net.SplitHostPort(conf.ClusterAdvertise)
-	if err != nil{
 		panic(err)
 	}
 
@@ -59,7 +48,7 @@ func NewServer(conf conf.ConfigRaft, port int){
 	raftConf.LocalID = raft.ServerID(conf.NodeId)
 	raftConf.SnapshotThreshold = 1024
 
-	fsmStore := fsm.NewBadger(badgerDB)
+	fsmStore := fsm.NewBadger(db)
 
 	store, err := raftboltdb.NewBoltStore(filepath.Join(conf.VolumeDir, "raft.dataRepo"))
 	if err != nil {
@@ -110,13 +99,31 @@ func NewServer(conf conf.ConfigRaft, port int){
 			panic(err)
 		}
 	}
+	return raftServer, err
+}
+
+// port is http port
+func NewServer(conf conf.ConfigRaft, port int) {
+	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
+	badgerDB, err := badger.Open(badgerOpt)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = badgerDB.Close(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error close badgerDB: %s\n", err.Error())
+		}
+	}()
+	raftServer, err := NewRaft(conf, port , badgerDB)
+	if err != nil{
+		panic(err)
+	}
 
 	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer, conf.ClusterAddress)
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}
-
-	return
 }
 
 func joinRaftCluster(node_id, raft_address, raft_leader string) error {

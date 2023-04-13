@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"ysf/raftsample/model"
+	"baiyecha/ipvs-manager/model"
 
 	"github.com/moby/ipvs"
 	"github.com/vishvananda/netlink/nl"
@@ -60,7 +60,7 @@ func createIpvs(service *model.Ipvs) error {
 		dest := &ipvs.Destination{
 			Address: net.ParseIP(ip),
 			Port:    uint16(port),
-			Weight: backend.Weight,
+			Weight:  backend.Weight,
 		}
 		fmt.Printf("%+v\n", dest)
 		err = handle.NewDestination(svc, dest)

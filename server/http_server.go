@@ -7,9 +7,9 @@ import (
 	_ "net/http/pprof"
 	"time"
 
-	"ysf/raftsample/server/login_handler"
-	"ysf/raftsample/server/raft_handler"
-	"ysf/raftsample/server/store_handler"
+	"baiyecha/ipvs-manager/server/login_handler"
+	"baiyecha/ipvs-manager/server/raft_handler"
+	"baiyecha/ipvs-manager/server/store_handler"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"

@@ -11,10 +11,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/levigross/grequests"
 
-	"ysf/raftsample/constant"
-	"ysf/raftsample/fsm"
-	"ysf/raftsample/model"
-	"ysf/raftsample/utils"
+	"baiyecha/ipvs-manager/constant"
+	"baiyecha/ipvs-manager/fsm"
+	"baiyecha/ipvs-manager/model"
+	"baiyecha/ipvs-manager/utils"
 )
 
 // requestStore payload for storing new data in raft cluster
@@ -93,7 +93,7 @@ func (h handler) Update(eCtx echo.Context) error {
 			Value: form,
 		},
 	})
-	if err != nil  {
+	if err != nil {
 		fmt.Print(err)
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": err,

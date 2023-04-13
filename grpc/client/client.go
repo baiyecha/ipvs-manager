@@ -1,8 +1,8 @@
 package client
 
 import (
+	pb "baiyecha/ipvs-manager/grpc/proto"
 	"context"
-	pb "ysf/raftsample/grpc/proto"
 
 	"google.golang.org/grpc"
 )
@@ -20,9 +20,9 @@ func NewGrpClient(address ...string) *IpvsClient {
 func (client *IpvsClient) GetIpvsList() {
 }
 
-func doGetIpvsList(address string) (*pb.IpvsListResponse, error){
+func doGetIpvsList(address string) (*pb.IpvsListResponse, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure)
-	if err!= nil {
+	if err != nil {
 		return err, nil
 	}
 	defer conn.Close()
