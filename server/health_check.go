@@ -113,11 +113,11 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 func telnet(protocol string, host string, port string) int {
 	timeout := time.Second
 	conn, err := net.DialTimeout(protocol, host+":"+port, timeout)
-	conn.Close()
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	} else {
+		defer conn.Close()
 		msg, _, err := bufio.NewReader(conn).ReadLine()
 		if err != nil {
 			if err == io.EOF {

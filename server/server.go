@@ -120,7 +120,10 @@ func NewServer(conf conf.ConfigRaft, port int) {
 	if err != nil {
 		panic(err)
 	}
+	// 开始心跳检测
+	go RunHealthCheck(badgerDB, raftServer)
 
+	// 开启http服务
 	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer, conf.ClusterAddress)
 	if err := srv.Start(); err != nil {
 		panic(err)

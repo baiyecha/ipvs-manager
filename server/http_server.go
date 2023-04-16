@@ -47,7 +47,6 @@ func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c 
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-
 type Ipvs struct {
 	VIP       string     `json:"vip"`
 	Backends  []*Backend `json:"backends"`
@@ -90,6 +89,11 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 </body>
 </html>
 `))
+
+	option0 := "<option value=0\" + `${item.check_type===0?\" selected\":\"\"}` + \">tcp</option>"
+	option1 := "<option value=1\" + `${item.check_type===1?\" selected\":\"\"}` + \">http</option>"
+	option2 := "<option value=2\" + `${item.check_type===2?\" selected\":\"\"}` + \">udp</option>"
+
 	renderer := &TemplateRenderer{
 		templates: template.Must(t.New("table.html").Parse(`
 <!doctype html>
@@ -143,6 +147,8 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
         $("#sched_name").val("")
         $("#addr").val("")
         $("#weight").val("")
+		$("#check_type").val(0)
+        $("#check_info").val("")
     }
 
     function deleteIpvs(id) {
@@ -174,6 +180,8 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
             if (i === 0) {
                 $("#addr").val(item.addr)
                 $("#weight").val(item.weight)
+				$("#check_type").val(item.check_type)
+                $("#check_info").val(item.check_info)
             } else {
                 backends=i+1
                 $("#backends").append("<div id=\"backend" + backends + "\">\n" +
@@ -184,6 +192,18 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
                     "            <label>\n" +
                     "                Weight:\n" +
                     "                <input type=\"text\" name=\"weight\" value=\""+item.weight+"\">\n" +
+                    "            </label>\n" +
+					"            <label>\n" +
+                    "                CheckType:\n" +
+                    "                <select name=\"check_type\">\n" +
+                    "` + option0 + `" +
+                    "` + option1 + `" +
+                    "` + option2 + `" +
+                    "	             </select>"+
+                    "            </label>\n" +
+					"            <label>\n" +
+                    "                CheckInfo:\n" +
+                    "                <input type=\"text\" name=\"check_info\" value=\""+item.check_info+"\">\n" +
                     "            </label>\n" +
                     "            <button onclick=\"deleteBackend('backend" + backends + "')\">-</button>\n" +
                     "        </div>")
@@ -201,6 +221,18 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
             "            <label>\n" +
             "                Weight:\n" +
             "                <input type=\"text\" name=\"weight\">\n" +
+            "            </label>\n" +
+			"            <label>\n" +
+            "                CheckType:\n" +
+            "                <select name=\"check_type\" id=\"check_type\">\n" +
+            "			         <option value=\"0\">tcp</option>\n" +
+            "			         <option value=\"1\">http</option>\n" +
+            "			         <option value=\"2\">upd</option>\n" +
+            "	             </select>"+
+            "            </label>\n" +
+            "            <label>\n" +
+            "                CheckInfo:\n" +
+            "                <input type=\"text\" name=\"check_info\">\n" +
             "            </label>\n" +
             "            <button onclick=\"deleteBackend('backend" + backends + "')\">-</button>\n" +
             "        </div>")
@@ -226,6 +258,10 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
                 ipvs.backends.push({addr: item.value})
             } else if (item.name === "weight") {
                 ipvs.backends[ipvs.backends.length-1].weight = Number(item.value)
+            } else if (item.name === "check_type") {
+                ipvs.backends[ipvs.backends.length-1].check_type = Number(item.value)
+            } else if (item.name === "check_info") {
+                ipvs.backends[ipvs.backends.length-1].check_info = item.value
             }
         })
         if (operate === "add") {
@@ -263,6 +299,8 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
         <th>Addr</th>
         <th>Weight</th>
         <th>Status</th>
+		<th>CheckType</th>
+        <th>CheckInfo</th>
         <th>操作</th>
     </tr>
     </thead>
@@ -278,7 +316,19 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 			{{- end}}
         <td>{{ $backend.Addr }}</td>
 		<td>{{ $backend.Weight }}</td>
-		<td>{{ $backend.Status }}</td>
+		{{- if eq $backend.Status 0}}
+		<td>健康</td>
+		{{- else }}
+		<td>不健康</td>
+		{{- end}}
+		{{- if eq $backend.CheckType 0}}
+		<td>tcp</td>
+		{{- else if eq $backend.CheckType 1}}
+		<td>http</td>
+		{{- else }}
+		<td>udp</td>
+		{{- end}}
+		<td>{{ $backend.CheckInfo }}</td>
 			{{- if eq $index 0}}
         <td rowspan="{{ len $ipvs.Backends}}">
             <button type="button" onclick="update({{ $index1 }})">编辑</button>
@@ -312,6 +362,18 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
         <label>
             Weight:
             <input id="weight" type="text" name="weight">
+        </label>
+		<label>
+            CheckType:
+			<select name="check_type" id="check_type">
+			  <option value="0">tcp</option>
+			  <option value="1">http</option>
+			  <option value="2">upd</option>
+			</select>
+        </label>
+		<label>
+            CheckInfo:
+            <input id="check_info" type="text" name="check_info">
         </label>
         <button onclick="addBackend()">+</button>
     </div>
