@@ -9,7 +9,7 @@ require (
 	github.com/labstack/echo/v4 v4.1.16
 	github.com/levigross/grequests v0.0.0-20221222020224-9eee758d18d5
 	github.com/moby/ipvs v1.1.0
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/vishvananda/netlink v1.1.0
 	google.golang.org/grpc v1.21.1
