@@ -87,7 +87,7 @@ func (h handler) Update(eCtx echo.Context) error {
 			"error": fmt.Sprintf("not found leader"),
 		})
 	}
-	res, err := grequests.Post(leaderAddr+"/store/", &grequests.RequestOptions{
+	res, err := grequests.Post(fmt.Sprintf("http://%s/store/",leaderAddr), &grequests.RequestOptions{
 		JSON: requestStore{
 			Key:   constant.IpvsStroreKey,
 			Value: form,

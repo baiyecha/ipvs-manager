@@ -43,6 +43,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 	if err != nil {
 		panic(err)
 	}
+	raftBinAddr = fmt.Sprintf(":%s", raftBinAddr)
 
 	raftConf := raft.DefaultConfig()
 	raftConf.LocalID = raft.ServerID(conf.NodeId)
@@ -115,8 +116,8 @@ func NewServer(conf conf.ConfigRaft, port int) {
 			_, _ = fmt.Fprintf(os.Stderr, "error close badgerDB: %s\n", err.Error())
 		}
 	}()
-	raftServer, err := NewRaft(conf, port , badgerDB)
-	if err != nil{
+	raftServer, err := NewRaft(conf, port, badgerDB)
+	if err != nil {
 		panic(err)
 	}
 

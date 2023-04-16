@@ -5,11 +5,28 @@ package ipvs;
 option go_package = "./";
 
 message IpvsListRequeste{
-	string message=1;
 }
 
 message IpvsListResponse{
 	string message=1;
+}
+message Backend{
+	string addr=1;
+	int64 weight=2;
+	int64 status=3;
+	int64 check_type=4;
+	string check_info=5;
+}
+
+message Ipvs{
+	string vip=1;
+	repeated Backend backends=2;
+	string protocol=3;
+	string sched_name=4;
+}
+
+message IpvsList{
+	repeated Ipvs list=1;
 }
 
 service IpvsListService{
