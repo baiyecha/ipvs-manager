@@ -8,7 +8,7 @@ message IpvsListRequeste{
 }
 
 message IpvsListResponse{
-	string message=1;
+	repeated Ipvs list=1;
 }
 message Backend{
 	string addr=1;
@@ -25,9 +25,6 @@ message Ipvs{
 	string sched_name=4;
 }
 
-message IpvsList{
-	repeated Ipvs list=1;
-}
 
 service IpvsListService{
 	// 一个简单的rpc 获取所有的ipvs规则列表

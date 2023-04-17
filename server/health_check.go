@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -125,7 +126,7 @@ func telnet(protocol string, host string, port string) int {
 				return 0
 			}
 		} else {
-			fmt.Print(host + "" + port + " -" + string(msg))
+			fmt.Print(host + "" + port + " -" + string(msg), "\n")
 			return 1
 		}
 	}
@@ -133,16 +134,25 @@ func telnet(protocol string, host string, port string) int {
 }
 
 func httpCheck(url string) int {
-	res, err := grequests.Get(url, &grequests.RequestOptions{})
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	res, err := grequests.Get(url, &grequests.RequestOptions{
+		HTTPClient: &http.Client{
+			Transport: tr,
+		},
+	})
 	if err != nil {
 		fmt.Print(err)
 		return 1
 	}
 	if res.StatusCode == http.StatusOK {
-		fmt.Printf("check %s is ok!", url)
+		fmt.Printf("check %s is ok!\n", url)
 		return 0
 	} else {
-		fmt.Printf("check %s is failed! status: %d", url, res.StatusCode)
+		fmt.Printf("check %s is failed! status: %d\n", url, res.StatusCode)
 		return 1
 	}
 	return 1
