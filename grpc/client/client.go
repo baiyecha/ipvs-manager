@@ -54,7 +54,7 @@ func doGetIpvsList(address string) (*pb.IpvsListResponse, error) {
 
 func transformIpvsList(ipvsListResponse *pb.IpvsListResponse) *model.IpvsList {
 	ipvsList := &model.IpvsList{}
-	ipvsList.IpvsList = make([]*model.Ipvs, 0, len(ipvsListResponse.List))
+	ipvsList.List = make([]*model.Ipvs, 0, len(ipvsListResponse.List))
 	for _, ipvs := range ipvsListResponse.List {
 		backends := make([]*model.Backend, 0)
 		for _, backend := range ipvs.Backends {
@@ -66,7 +66,7 @@ func transformIpvsList(ipvsListResponse *pb.IpvsListResponse) *model.IpvsList {
 				CheckInfo: backend.CheckInfo,
 			})
 		}
-		ipvsList.IpvsList = append(ipvsList.IpvsList, &model.Ipvs{
+		ipvsList.List = append(ipvsList.List, &model.Ipvs{
 			Backends: backends,
 			VIP: ipvs.Vip,
 			Protocol: ipvs.Protocol,

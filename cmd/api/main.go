@@ -23,6 +23,7 @@ const (
 	clusterAddress   = "CLUSTER"      // 集群所有节点的http地址，用对接raft
 	clusterAdvertise = "ADVERTIES"    // 集群raft广播出来的地址，集群之间用这个地址通信
 	grpcPort         = "GRPC_PORT"    // grpc的监听地址
+	dummyName = "DUMMY_NAME" // ipvs网卡的名字
 )
 
 var confKeys = []string{
@@ -33,6 +34,7 @@ var confKeys = []string{
 	grpcAddress,
 	clusterAddress,
 	clusterAdvertise,
+	dummyName,
 }
 
 // main entry point of application start
@@ -54,6 +56,7 @@ func main() {
 	pflag.String("cluster", "127.0.0.1:8110", "集群所有节点的http地址，用来对接raft")
 	pflag.String("adverties", "127.0.0.1:8110", "集群raft广播出来的地址，集群之间用这个地址通信")
 	pflag.Int("grpc_port", 8210, "grpc的监听地址")
+	pflag.String("dummy_name", "ipvs-manager", "ipvs dummy网卡的名字")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
 	cluster := strings.Split(viper.GetString(clusterAddress), ",")
@@ -70,6 +73,7 @@ func main() {
 		},
 		Agent: conf.AgentConf{
 			GrpcAddress: strings.Split(viper.GetString(grpcAddress), ","),
+			DummtName: viper.GetString(dummyName),
 		},
 		Grpc: conf.GrpcConf{
 			Port: viper.GetInt(grpcPort),

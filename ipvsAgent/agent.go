@@ -25,7 +25,7 @@ func RunAgent(agentConf conf.AgentConf) error {
 				if err != nil {
 					fmt.Print("any addr is connection fail")
 				}
-				HandleIpvs(ipvsList)
+				HandleIpvs(ipvsList, agentConf.DummtName)
 				time.Sleep(5 * time.Second)
 			}
 		}()

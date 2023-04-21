@@ -16,7 +16,7 @@ type Backend struct {
 }
 
 type IpvsList struct {
-	IpvsList []*Ipvs `json:"ipvs_list"`
+	List []*Ipvs `json:"list"`
 	Json     string  `json:"-"`
 }
 

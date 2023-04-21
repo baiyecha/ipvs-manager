@@ -94,18 +94,34 @@ func (h handler) Table(eCtx echo.Context) error {
 			fmt.Printf("error unmarshal data to interface: %s", err.Error())
 		}
 	}
-	if len(ipvsList.IpvsList) == 0 {
-		ipvsList.IpvsList = make([]*model.Ipvs, 0)
+	if len(ipvsList.List) == 0 {
+		ipvsList.List = make([]*model.Ipvs, 0)
 	}
-	jsonStr, _ := json.Marshal(ipvsList.IpvsList)
+	jsonStr, _ := json.Marshal(ipvsList.List)
 	ipvsList.Json = string(jsonStr)
 	return eCtx.Render(http.StatusOK, "table.html", ipvsList)
 }
 
-type GrpcStoreServer struct{
-	pb.UnimplementedIpvsListServiceServer
-}
 
 func (gss *GrpcStoreServer) IpvsList(ctx context.Context, request *pb.IpvsListRequeste) (*pb.IpvsListResponse, error) {
-	return nil, nil
+	// 先拿出所有的ipvs信息
+	txn := gss.db.NewTransaction(false)
+	ipvsList := &pb.IpvsListResponse{}
+	item, err := txn.Get([]byte(constant.IpvsStroreKey))
+	value := make([]byte, 0)
+	if err != nil || item == nil {
+		fmt.Print(err)
+	} else {
+		err = item.Value(func(val []byte) error {
+			value = append(value, val...)
+			return nil
+		})
+		if len(value) > 0 {
+			err = json.Unmarshal(value, ipvsList)
+		}
+		if err != nil {
+			fmt.Printf("error unmarshal data to interface: %s", err.Error())
+		}
+	}
+	return ipvsList, err
 }

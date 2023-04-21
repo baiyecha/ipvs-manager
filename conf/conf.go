@@ -14,6 +14,7 @@ type ConfigServer struct {
 }
 type AgentConf struct {
 	GrpcAddress []string `mapstructure:"grpc_address"`
+	DummtName   string   `mapstructure:"dummy_name"`
 }
 
 type GrpcConf struct {

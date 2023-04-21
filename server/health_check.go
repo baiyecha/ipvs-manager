@@ -81,8 +81,8 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 
 func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 	isChange := false
-	for ipvsDataIndex := range ipvsList.IpvsList {
-		ipvsData := ipvsList.IpvsList[ipvsDataIndex]
+	for ipvsDataIndex := range ipvsList.List {
+		ipvsData := ipvsList.List[ipvsDataIndex]
 		for backendIndex := range ipvsData.Backends {
 			backend := ipvsData.Backends[backendIndex]
 			status := 1
@@ -98,7 +98,6 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 				status = httpCheck(backend.CheckInfo)
 			default:
 				backend.Status = 1
-
 			}
 			if status != backend.Status {
 				backend.Status = status
@@ -155,5 +154,4 @@ func httpCheck(url string) int {
 		fmt.Printf("check %s is failed! status: %d\n", url, res.StatusCode)
 		return 1
 	}
-	return 1
 }
