@@ -102,7 +102,9 @@ func (h handler) Table(eCtx echo.Context) error {
 	return eCtx.Render(http.StatusOK, "table.html", ipvsList)
 }
 
-type GrpcStoreServer struct{}
+type GrpcStoreServer struct{
+	pb.UnimplementedIpvsListServiceServer
+}
 
 func (gss *GrpcStoreServer) IpvsList(ctx context.Context, request *pb.IpvsListRequeste) (*pb.IpvsListResponse, error) {
 	return nil, nil

@@ -12,6 +12,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/vishvananda/netlink v1.1.0
-	google.golang.org/grpc v1.21.1
+	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 )

@@ -38,7 +38,7 @@ func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
 }
 
 func doGetIpvsList(address string) (*pb.IpvsListResponse, error) {
-	conn, err := grpc.Dial(address, grpc.WithInsecure)
+	conn, err := grpc.Dial(address)
 	if err != nil {
 		return nil, err
 	}

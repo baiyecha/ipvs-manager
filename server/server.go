@@ -17,6 +17,7 @@ import (
 	"baiyecha/ipvs-manager/conf"
 	"baiyecha/ipvs-manager/fsm"
 	"baiyecha/ipvs-manager/server/store_handler"
+
 	"baiyecha/ipvs-manager/utils"
 
 	"github.com/dgraph-io/badger/v2"
@@ -143,7 +144,7 @@ func newGrpcServer(conf conf.GrpcConf) error {
 		return err
 	}
 	s := grpc.NewServer()
-	pb.RegisterIpvsListServiceServer(s, store_handler.GrpcStoreServer{})
+	pb.RegisterIpvsListServiceServer(s, &store_handler.GrpcStoreServer{})
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
