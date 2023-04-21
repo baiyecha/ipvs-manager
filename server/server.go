@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,13 +12,18 @@ import (
 	"path/filepath"
 	"time"
 
+	pb "baiyecha/ipvs-manager/grpc/proto"
+
 	"baiyecha/ipvs-manager/conf"
 	"baiyecha/ipvs-manager/fsm"
+	"baiyecha/ipvs-manager/server/store_handler"
 	"baiyecha/ipvs-manager/utils"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 const (
@@ -128,6 +134,22 @@ func NewServer(conf conf.ConfigRaft, port int) {
 	if err := srv.Start(); err != nil {
 		panic(err)
 	}
+}
+
+func newGrpcServer(conf conf.GrpcConf) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+		return err
+	}
+	s := grpc.NewServer()
+	pb.RegisterIpvsListServiceServer(s, store_handler.GrpcStoreServer{})
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+	return err
 }
 
 func joinRaftCluster(node_id, raft_address, raft_leader string) error {

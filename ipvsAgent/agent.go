@@ -7,6 +7,7 @@ import (
 
 	"baiyecha/ipvs-manager/conf"
 	"baiyecha/ipvs-manager/model"
+	"baiyecha/ipvs-manager/grpc/client"
 )
 
 func RunAgent(agentConf conf.AgentConf) error {
@@ -32,13 +33,13 @@ func RunAgent(agentConf conf.AgentConf) error {
 }
 
 func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
-	ipvsList = &model.IpvsList{
-		IpvsList: make([]*model.Ipvs, 0),
+	c := client.NewGrpClient(address...)
+	ipvsList, err = c.GetIpvsList()
+	if err != nil{
+		return nil, err
 	}
-	for _, addr := range address {
-		// 使用grpc进行通信，获取当前ipvs信息列表
-		fmt.Println(addr)
-
+	if ipvsList == nil{
+		return nil, fmt.Errorf("get ipvslist is nil")
 	}
 	return ipvsList, err
 }

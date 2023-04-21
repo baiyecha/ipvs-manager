@@ -26,7 +26,8 @@ func HandleIpvs(ipvsList *model.IpvsList) {
 func createIpvs(service *model.Ipvs) error {
 	handle, err := ipvs.New("")
 	if err != nil {
-		fmt.Errorf(err.Error())
+		fmt.Println(err)
+		return err
 	}
 	defer handle.Close()
 

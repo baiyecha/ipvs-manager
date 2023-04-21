@@ -22,6 +22,7 @@ const (
 	grpcAddress      = "GRPC_ADDRESS" // agent对接的grpc地址列表
 	clusterAddress   = "CLUSTER"      // 集群所有节点的http地址，用对接raft
 	clusterAdvertise = "ADVERTIES"    // 集群raft广播出来的地址，集群之间用这个地址通信
+	grpcPort         = "GRPC_PORT"    // grpc的监听地址
 )
 
 var confKeys = []string{
@@ -37,7 +38,7 @@ var confKeys = []string{
 // main entry point of application start
 // run using CONFIG=config.yaml ./program
 func main() {
-	//v := viper.New()
+	// v := viper.New()
 	// v.AutomaticEnv()
 	// if err := v.BindEnv(confKeys...); err != nil {
 	// 	log.Fatal(err)
@@ -52,6 +53,7 @@ func main() {
 	pflag.String("grpc_address", "127.0.0.1:8210", "agent对接的grpc地址列表")
 	pflag.String("cluster", "127.0.0.1:8110", "集群所有节点的http地址，用来对接raft")
 	pflag.String("adverties", "127.0.0.1:8110", "集群raft广播出来的地址，集群之间用这个地址通信")
+	pflag.Int("grpc_port", 8210, "grpc的监听地址")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
 	cluster := strings.Split(viper.GetString(clusterAddress), ",")
@@ -68,6 +70,9 @@ func main() {
 		},
 		Agent: conf.AgentConf{
 			GrpcAddress: strings.Split(viper.GetString(grpcAddress), ","),
+		},
+		Grpc: conf.GrpcConf{
+			Port: viper.GetInt(grpcPort),
 		},
 	}
 

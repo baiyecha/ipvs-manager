@@ -1,15 +1,16 @@
 package store_handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
-
 	"baiyecha/ipvs-manager/constant"
+	pb "baiyecha/ipvs-manager/grpc/proto"
 	"baiyecha/ipvs-manager/model"
+	"github.com/labstack/echo/v4"
 )
 
 // Get will fetched data from badgerDB where the raft use to store data.
@@ -99,4 +100,10 @@ func (h handler) Table(eCtx echo.Context) error {
 	jsonStr, _ := json.Marshal(ipvsList.IpvsList)
 	ipvsList.Json = string(jsonStr)
 	return eCtx.Render(http.StatusOK, "table.html", ipvsList)
+}
+
+type GrpcStoreServer struct{}
+
+func (gss *GrpcStoreServer) IpvsList(ctx context.Context, request *pb.IpvsListRequeste) (*pb.IpvsListResponse, error) {
+	return nil, nil
 }
