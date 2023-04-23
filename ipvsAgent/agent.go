@@ -29,6 +29,7 @@ func RunAgent(agentConf conf.AgentConf) error {
 				time.Sleep(5 * time.Second)
 			}
 		}()
+		time.Sleep(5 * time.Second)
 	}
 }
 

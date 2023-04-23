@@ -111,7 +111,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 }
 
 // port is http port
-func NewServer(conf conf.ConfigRaft, port int) {
+func NewServer(conf conf.ConfigRaft, port int, grpcConf conf.GrpcConf) {
 	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
 	badgerDB, err := badger.Open(badgerOpt)
 	if err != nil {
@@ -129,7 +129,7 @@ func NewServer(conf conf.ConfigRaft, port int) {
 	}
 	// 开始心跳检测
 	go RunHealthCheck(badgerDB, raftServer)
-
+	go newGrpcServer(grpcConf, badgerDB)
 	// 开启http服务
 	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer, conf.ClusterAddress)
 	if err := srv.Start(); err != nil {
@@ -137,17 +137,17 @@ func NewServer(conf conf.ConfigRaft, port int) {
 	}
 }
 
-func newGrpcServer(conf conf.GrpcConf) error {
+func newGrpcServer(conf conf.GrpcConf, db *badger.DB) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 		return err
 	}
 	s := grpc.NewServer()
-	pb.RegisterIpvsListServiceServer(s, &store_handler.GrpcStoreServer{})
+	pb.RegisterIpvsListServiceServer(s, store_handler.NewGrpcStoreServer(db))
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-	if err := s.Serve(lis); err != nil {
+	if err = s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 	return err

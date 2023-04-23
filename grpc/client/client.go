@@ -22,7 +22,6 @@ func NewGrpClient(address ...string) *IpvsClient {
 
 func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
 	var err error
-	ipvsList := &model.IpvsList{}
 	for _, addr := range client.address {
 		var ipvsListResponse  *pb.IpvsListResponse
 		ipvsListResponse, err = doGetIpvsList(addr)
@@ -30,7 +29,7 @@ func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
 			fmt.Println(err)
 			continue
 		}
-		ipvsList = transformIpvsList(ipvsListResponse)
+		ipvsList := transformIpvsList(ipvsListResponse)
 		return ipvsList, err
 	}
 	fmt.Println("do get ipvs by grpc error", err)
@@ -38,7 +37,7 @@ func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
 }
 
 func doGetIpvsList(address string) (*pb.IpvsListResponse, error) {
-	conn, err := grpc.Dial(address)
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

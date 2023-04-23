@@ -3,13 +3,12 @@ package ipvsAgent
 import (
 	"fmt"
 	"net"
-	"os/exec"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"baiyecha/ipvs-manager/model"
 
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/moby/ipvs"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
@@ -34,7 +33,6 @@ func createIpvs(service *model.Ipvs, dummyName string) error {
 	}
 	defer handle.Close()
 	checkDummyIface(dummyName)
-
 	svcIp, svcPortStr, err := net.SplitHostPort(service.VIP)
 	if err != nil {
 		fmt.Println(err)
@@ -50,9 +48,11 @@ func createIpvs(service *model.Ipvs, dummyName string) error {
 		SchedName:     ipvs.RoundRobin,
 	}
 	fmt.Printf("%+v\n", svc)
+	vip, _, _ := net.SplitHostPort(service.VIP)
+	addDummyIfaceAddrs(dummyName, []string{vip})
 	err = handle.NewService(svc)
 	if err != nil {
-		fmt.Println("44", err)
+		fmt.Println(err)
 		return err
 	}
 	for _, backend := range service.Backends {
@@ -74,7 +74,7 @@ func createIpvs(service *model.Ipvs, dummyName string) error {
 			continue
 		}
 	}
-	err = addDummyIfaceAddrs(dummyName, []string{service.VIP})
+	// err = addDummyIfaceAddrs(dummyName, []string{service.VIP})
 	return err
 }
 
@@ -85,19 +85,25 @@ func checkDummyIface(name string) error {
 		// 网卡不存在，创建网卡
 		link := &netlink.Dummy{
 			LinkAttrs: netlink.LinkAttrs{
-				Name: "dummy0",
+				Name: name,
 				MTU:  1500,
 			},
 		}
 		if err = netlink.LinkAdd(link); err != nil {
 			panic(fmt.Sprintf("Failed to add dummy link: %v", err))
 		}
+		if err = netlink.LinkSetUp(link); err != nil {
+			panic(fmt.Sprintf("Failed to up dummy link: %v", err))
+		}
+		return err
 	}
+	netlink.LinkSetUp(link)
 	return err
 }
 
 func addDummyIfaceAddrs(name string, addrs []string) error {
 	// 查看虚拟网卡的信息
+	fmt.Sprintln("增加网卡ip", name, addrs)
 	link, err := netlink.LinkByName(name)
 	if err != nil {
 		return fmt.Errorf("failed to get link: %v", err)
@@ -115,36 +121,55 @@ func addDummyIfaceAddrs(name string, addrs []string) error {
 	}
 	// 增加ip
 	for _, addr := range addrs {
-		ipaddr, err := netlink.ParseAddr(addr)
+		_, ipaddr, _ := net.ParseCIDR(addr + "/32")
 		if err != nil {
 			fmt.Println("parse addr error", err, addr)
 			continue
 		}
-		if _, ok := nladdrMap[addr]; ok {
-			continue
-		}
+		// if _, ok := nladdrMap[addr]; ok {
+		// 	continue
+		// }
 		nladdr := &netlink.Addr{
-			IPNet: ipaddr.IPNet,
+			IPNet: ipaddr,
 			Label: "",
 		}
 		if err = netlink.AddrAdd(link, nladdr); err != nil {
-			fmt.Printf("Failed to add IP address: %v", err)
-			continue
+			if err.Error() != "file exists" {
+				fmt.Printf("Failed to add IP address: %v", err)
+				continue
+			}
 		}
-		// 增加iptables snat, 这里直接使用命令行操作
-		err = iptables("-t", "nat", "-A", "POSTROUTING", "-s", addr + "/32", "-j", "MASQUERADE")
-		if err != nil {
-			fmt.Println("add iptables error ", err, addr)
-			continue
-		}
+		// err = iptables("-t", "nat", "-A", "POSTROUTING", "-s", addr+"/32", "-j", "MASQUERADE")
+		//
+		//	if err != nil {
+		//		fmt.Println("add iptables error ", err, addr)
+		//		continue
+		//	}
+		SetupIPTables(addr + "/32")
 	}
 	return nil
 }
 
-// # iptables 封装iptables命令
-func iptables(args ...string) error {
-	if err := exec.Command("/sbin/iptables", args...).Run(); err != nil {
-		return fmt.Errorf("iptables failed: iptables %v", strings.Join(args, " "))
+// // # iptables 封装iptables命令
+// func iptables(args ...string) error {
+// 	fmt.Println("cmd is ", "/sbin/iptables", strings.Join(args, " "))
+// 	if err := exec.Command("/sbin/iptables", args...).Run(); err != nil {
+// 		return fmt.Errorf("iptables failed: iptables %v", strings.Join(args, " "))
+// 	}
+// 	return nil
+// }
+
+func SetupIPTables(addr string) {
+	// 读取本地iptables
+	ipt, err := iptables.New()
+	if err != nil {
+		fmt.Println("iptables new error", err)
+		return
 	}
-	return nil
+	//  iptables -t nat -A POSTROUTING -s 10.0.1.0/24 -j MASQUERADE
+	rule := []string{"-s", addr, "-j", "MASQUERADE"}
+	// 先进行清除后再添加，保持简易幂等
+	_ = ipt.Delete("nat", "POSTROUTING", rule...)
+	ipt.Append("nat", "POSTROUTING", rule...)
+	fmt.Println("Setup IPTables done")
 }

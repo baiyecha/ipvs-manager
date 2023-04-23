@@ -61,8 +61,8 @@ type Backend struct {
 }
 
 type IpvsList struct {
-	IpvsList []*Ipvs `json:"ipvs_list"`
-	Json     string  `json:"-"`
+	List []*Ipvs `json:"list"`
+	Json string  `json:"-"`
 }
 
 // New return new server
@@ -159,7 +159,7 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 			type        : 'POST',
 			dataType    : 'json',
 			contentType : 'application/json;charset=UTF-8',
-			data        : JSON.stringify({ipvs_list:ipvsList}),
+			data        : JSON.stringify({list:ipvsList}),
 			complete    : function (re) {
 				console.log("add re:",re)
 				window.location.reload()
@@ -274,7 +274,7 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 			type        : 'POST',
 			dataType    : 'json',
 			contentType : 'application/json;charset=UTF-8',
-			data        : JSON.stringify({ipvs_list:ipvsList}),
+			data        : JSON.stringify({list:ipvsList}),
 			complete    : function (re) {
 				console.log("add re:",re)
 				window.location.reload()
@@ -305,7 +305,7 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
     </tr>
     </thead>
     <tbody>
-	{{- range $index1, $ipvs := .IpvsList}}
+	{{- range $index1, $ipvs := .List}}
     <tr>
         <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.VIP }}</td>
 		<td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.Protocol }}</td>

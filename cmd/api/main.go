@@ -23,7 +23,7 @@ const (
 	clusterAddress   = "CLUSTER"      // 集群所有节点的http地址，用对接raft
 	clusterAdvertise = "ADVERTIES"    // 集群raft广播出来的地址，集群之间用这个地址通信
 	grpcPort         = "GRPC_PORT"    // grpc的监听地址
-	dummyName = "DUMMY_NAME" // ipvs网卡的名字
+	dummyName        = "DUMMY_NAME"   // ipvs网卡的名字
 )
 
 var confKeys = []string{
@@ -73,7 +73,7 @@ func main() {
 		},
 		Agent: conf.AgentConf{
 			GrpcAddress: strings.Split(viper.GetString(grpcAddress), ","),
-			DummtName: viper.GetString(dummyName),
+			DummtName:   viper.GetString(dummyName),
 		},
 		Grpc: conf.GrpcConf{
 			Port: viper.GetInt(grpcPort),
@@ -83,11 +83,11 @@ func main() {
 	log.Printf("%+v\n", conf)
 	switch viper.GetString(serverType) {
 	case "singleon": // all-in-one
-
+		go ipvsAgent.RunAgent(conf.Agent)
+		server.NewServer(conf.Raft, conf.Server.Port,conf.Grpc)
 	case "agent": // 单agent
 		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
-		server.NewServer(conf.Raft, conf.Server.Port)
-
+		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc)
 	}
 }
