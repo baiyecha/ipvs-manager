@@ -5,6 +5,7 @@ import (
 	"net"
 	"sort"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"baiyecha/ipvs-manager/model"
@@ -22,10 +23,25 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 	}
 	defer handle.Close()
 	services, _ := handle.GetServices()
-	// 本机的ipvs map
+	// 本机的ipvs map 只管理当前网卡上的
+	localIps := make(map[string]struct{})
+	iface, err := net.InterfaceByName(dummyName)
+	if err == nil {
+		attrs, _ := iface.Addrs()
+		for _, attr := range attrs {
+			ip := strings.Split(attr.String(), "/")
+			if len(ip) < 1 {
+				continue
+			}
+			localIps[ip[0]] = struct{}{}
+		}
+	}
+
 	localIpvsMap := make(map[string]*ipvs.Service)
 	for _, s := range services {
-		localIpvsMap[s.Address.String()+":"+strconv.Itoa(int(s.Port))] = s
+		if _, ok := localIps[s.Address.String()]; ok {
+			localIpvsMap[s.Address.String()+":"+strconv.Itoa(int(s.Port))] = s
+		}
 	}
 	// 用户配置的ipvs map
 	userIpvsMap := make(map[string]*model.Ipvs)
@@ -61,7 +77,6 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 		deleteIpvs(v, dummyName)
 	}
 	// 最后确认后端规则是否有变动，如果有变动，则删除整个ipvs规则再重新生成，保持幂等
-
 	for k, v := range localIpvsMap {
 		userIpvs, ok := userIpvsMap[k]
 		if !ok {
@@ -72,12 +87,14 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 		if userIpvs.SchedName != v.SchedName {
 			// 更新ipvs调度规则
 			updateIpvs(v, userIpvs, dummyName)
+			continue
 		}
 		localBackend, _ := handle.GetDestinations(v)
 		// 确认backend
 		if len(userIpvs.Backends) != len(localBackend) {
 			// 更新整个ipvs
 			updateIpvs(v, userIpvs, dummyName)
+			continue
 		}
 		// 对比backend,
 		// 先用ip排个序
@@ -116,7 +133,7 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 }
 
 func updateIpvs(Oldservice *ipvs.Service, service *model.Ipvs, dummyName string) error {
-	fmt.Println("更新整个ipvs...")
+	fmt.Println("更新ipvs...")
 	deleteIpvs(Oldservice, dummyName)
 	return createIpvs(service, dummyName)
 }
@@ -133,8 +150,9 @@ func deleteIpvs(service *ipvs.Service, dummyName string) error {
 	if err != nil {
 		fmt.Println("delete ipvs service error", err)
 	}
-	// 删除ip和iptables
-	return delDummyIfaceAddrs(dummyName, []string{service.Address.String()})
+	return nil
+	// 删除ip和iptables, 不确定是否还有其他在用，不能删除，保持create操作的幂等性即可
+	// return delDummyIfaceAddrs(dummyName, []string{service.Address.String()})
 }
 
 func createIpvs(service *model.Ipvs, dummyName string) error {

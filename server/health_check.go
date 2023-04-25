@@ -1,11 +1,9 @@
 package server
 
 import (
-	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -111,25 +109,16 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 // @protocol tcp or udp
 // @return 0 succeed 1 failed
 func telnet(protocol string, host string, port string) int {
-	timeout := time.Second
-	conn, err := net.DialTimeout(protocol, host+":"+port, timeout)
+	conn, err := net.Dial(protocol, host+":"+port)
 	if err != nil {
+		fmt.Printf("Port %s is closed\n", host+":"+port)
 		fmt.Println(err)
 		return 1
 	} else {
-		defer conn.Close()
-		msg, _, err := bufio.NewReader(conn).ReadLine()
-		if err != nil {
-			if err == io.EOF {
-				fmt.Print(host + "" + port + " - Open!")
-				return 0
-			}
-		} else {
-			fmt.Print(host + "" + port + " -" + string(msg), "\n")
-			return 1
-		}
+		fmt.Printf("Port %s is open\n", host+":"+port)
+		conn.Close()
+		return 0
 	}
-	return 1
 }
 
 func httpCheck(url string) int {

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"baiyecha/ipvs-manager/conf"
-	"baiyecha/ipvs-manager/model"
 	"baiyecha/ipvs-manager/grpc/client"
+	"baiyecha/ipvs-manager/model"
 )
 
 func RunAgent(agentConf conf.AgentConf) error {
@@ -24,6 +24,12 @@ func RunAgent(agentConf conf.AgentConf) error {
 				ipvsList, err := getIpvs(agentConf.GrpcAddress)
 				if err != nil {
 					fmt.Print("any addr is connection fail")
+					time.Sleep(5 * time.Second)
+					continue
+				}
+				if ipvsList == nil {
+					time.Sleep(5 * time.Second)
+					continue
 				}
 				HandleIpvs(ipvsList, agentConf.DummtName)
 				time.Sleep(5 * time.Second)
@@ -36,10 +42,10 @@ func RunAgent(agentConf conf.AgentConf) error {
 func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
 	c := client.NewGrpClient(address...)
 	ipvsList, err = c.GetIpvsList()
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	if ipvsList == nil{
+	if ipvsList == nil {
 		return nil, fmt.Errorf("get ipvslist is nil")
 	}
 	return ipvsList, err

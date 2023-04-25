@@ -10,6 +10,8 @@ import (
 	"baiyecha/ipvs-manager/constant"
 	pb "baiyecha/ipvs-manager/grpc/proto"
 	"baiyecha/ipvs-manager/model"
+
+	"github.com/dgraph-io/badger/v2"
 	"github.com/labstack/echo/v4"
 )
 
@@ -102,7 +104,6 @@ func (h handler) Table(eCtx echo.Context) error {
 	return eCtx.Render(http.StatusOK, "table.html", ipvsList)
 }
 
-
 func (gss *GrpcStoreServer) IpvsList(ctx context.Context, request *pb.IpvsListRequeste) (*pb.IpvsListResponse, error) {
 	// 先拿出所有的ipvs信息
 	txn := gss.db.NewTransaction(false)
@@ -110,7 +111,11 @@ func (gss *GrpcStoreServer) IpvsList(ctx context.Context, request *pb.IpvsListRe
 	item, err := txn.Get([]byte(constant.IpvsStroreKey))
 	value := make([]byte, 0)
 	if err != nil || item == nil {
-		fmt.Print(err)
+		if err == badger.ErrKeyNotFound {
+			return ipvsList, nil
+		} else {
+			fmt.Print(err)
+		}
 	} else {
 		err = item.Value(func(val []byte) error {
 			value = append(value, val...)
