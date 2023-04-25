@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -83,8 +84,12 @@ func main() {
 	log.Printf("%+v\n", conf)
 	switch viper.GetString(serverType) {
 	case "singleon": // all-in-one
-		go ipvsAgent.RunAgent(conf.Agent)
-		server.NewServer(conf.Raft, conf.Server.Port,conf.Grpc)
+		go func() {
+			// 等 server启动了再启动，避免链接不上报错，虽然即使报错也没不影响
+			time.Sleep(3 * time.Second)
+			ipvsAgent.RunAgent(conf.Agent)
+		}()
+		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc)
 	case "agent": // 单agent
 		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
