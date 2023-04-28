@@ -86,6 +86,7 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 		// 确认转发规则
 		if userIpvs.SchedName != v.SchedName {
 			// 更新ipvs调度规则
+			fmt.Println("因为schedName不一致，更新", userIpvs.SchedName, v.SchedName)
 			updateIpvs(v, userIpvs, dummyName)
 			continue
 		}
@@ -93,38 +94,37 @@ func HandleIpvs(ipvsList *model.IpvsList, dummyName string) {
 		// 确认backend
 		if len(userIpvs.Backends) != len(localBackend) {
 			// 更新整个ipvs
+			fmt.Println("因为backend数量不一致，更新", len(userIpvs.Backends), len(localBackend))
 			updateIpvs(v, userIpvs, dummyName)
 			continue
 		}
 		// 对比backend,
 		// 先用ip排个序
 		sort.Slice(localBackend, func(i, j int) bool {
-			if localBackend[i].Address.String() > localBackend[j].Address.String() {
-				return true
-			}
-			if localBackend[i].Address.String() == localBackend[j].Address.String() {
-				return localBackend[i].Port > localBackend[j].Port
-			}
-			return false
+			return localBackend[i].Address.String()+":"+strconv.Itoa(int(localBackend[i].Port)) > localBackend[j].Address.String()+":"+strconv.Itoa(int(localBackend[j].Port))
 		})
 		sort.Slice(userIpvs.Backends, func(i, j int) bool {
-			return userIpvs.Backends[i].Addr > localBackend[j].Address.String()
+			return userIpvs.Backends[i].Addr > userIpvs.Backends[j].Addr
 		})
 		// 排序完成后，开始对比backend，只要有不同，就直接走更新整个ipvs逻辑
 		for i, userBackend := range userIpvs.Backends {
+
 			if userBackend.Weight != localBackend[i].Weight {
 				// 更新
+				fmt.Printf("userbackend: %v , loaclBackend %v \n", userBackend, localBackend[i])
 				updateIpvs(v, userIpvs, dummyName)
 				continue
 			}
 			host, port, _ := net.SplitHostPort(userBackend.Addr)
 			if host != localBackend[i].Address.String() {
 				// 更新
+				fmt.Printf("userbackend: %v , loaclBackend %v \n", userBackend, localBackend[i])
 				updateIpvs(v, userIpvs, dummyName)
 				continue
 			}
 			if port != strconv.Itoa(int(localBackend[i].Port)) {
 				// 更新
+				fmt.Printf("userbackend: %v , loaclBackend %v \n", userBackend, localBackend[i])
 				updateIpvs(v, userIpvs, dummyName)
 				continue
 			}

@@ -115,7 +115,7 @@ func telnet(protocol string, host string, port string) int {
 		fmt.Println(err)
 		return 1
 	} else {
-		fmt.Printf("Port %s is open\n", host+":"+port)
+		// fmt.Printf("Port %s is open\n", host+":"+port)
 		conn.Close()
 		return 0
 	}
@@ -137,7 +137,7 @@ func httpCheck(url string) int {
 		return 1
 	}
 	if res.StatusCode == http.StatusOK {
-		fmt.Printf("check %s is ok!\n", url)
+		// fmt.Printf("check %s is ok!\n", url)
 		return 0
 	} else {
 		fmt.Printf("check %s is failed! status: %d\n", url, res.StatusCode)
