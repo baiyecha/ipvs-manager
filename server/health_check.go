@@ -50,22 +50,22 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 				})
 
 				if err != nil {
-					fmt.Printf("error appending byte value of key ipvs from storage: %s", err.Error())
+					fmt.Printf("error appending byte value of key ipvs from storage: %s \n", err.Error())
 					goto done
 				}
 				if len(value) > 0 {
 					err = json.Unmarshal(value, ipvsList)
 				}
 				if err != nil {
-					fmt.Printf("error unmarshal data to interface: %s", err.Error())
+					fmt.Printf("error unmarshal data to interface: %s \n", err.Error())
 					goto done
 				}
 				// 检测所有ipvs 后端是否存活
 				_, isChange = doHealthCheck(ipvsList)
 				if isChange {
-					err := store_handler.Store(r, "ipvs", ipvsList)
+					err := store_handler.Store(r, constant.IpvsStroreKey, ipvsList)
 					if err != nil {
-						fmt.Printf("update ipvs data error: %s", err.Error())
+						fmt.Printf("update ipvs data error: %s \n", err.Error())
 						goto done
 					}
 				}
@@ -133,7 +133,7 @@ func httpCheck(url string) int {
 		},
 	})
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
 		return 1
 	}
 	if res.StatusCode == http.StatusOK {
