@@ -54,7 +54,7 @@ func main() {
 	pflag.String("raft_node_id", "raft", "raft 的节点id,每个节点需要保持唯一")
 	pflag.String("raft_vol_dir", "node_1_data", "raft⋅信息和kv数据库的文件目录")
 	pflag.String("grpc_address", "127.0.0.1:8210", "agent对接的grpc地址列表")
-	pflag.String("cluster", "127.0.0.1:8110", "集群所有节点的http地址，用来对接raft")
+	pflag.String("cluster", "127.0.0.1:8010", "集群所有节点的http地址，用来对接raft")
 	pflag.String("adverties", "127.0.0.1:8110", "集群raft广播出来的地址，集群之间用这个地址通信")
 	pflag.Int("grpc_port", 8210, "grpc的监听地址")
 	pflag.String("dummy_name", "ipvs-manager", "ipvs dummy网卡的名字")

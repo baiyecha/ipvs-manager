@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
@@ -421,6 +422,7 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 
 	// 更新ipvs
 	e.POST("/update", storeHandler.Update)
+	fmt.Println("web server start listen on ", listenAddr)
 	return &srv{
 		listenAddress: listenAddr,
 		echo:          e,
