@@ -175,7 +175,7 @@ func createIpvs(service *model.Ipvs, dummyName string) error {
 		Protocol:      syscall.IPPROTO_TCP,
 		AddressFamily: nl.FAMILY_V4,
 		Netmask:       0xFFFFFFFF,
-		SchedName:     ipvs.RoundRobin,
+		SchedName:     service.SchedName,
 	}
 	fmt.Printf("%+v\n", svc)
 	vip, _, _ := net.SplitHostPort(service.VIP)
