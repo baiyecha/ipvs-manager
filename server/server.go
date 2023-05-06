@@ -22,7 +22,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
-	"github.com/hashicorp/raft-boltdb"
+	raftboltdb "github.com/hashicorp/raft-boltdb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -98,7 +98,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 			},
 		},
 	}
-	leraderAddr := utils.GetLeader(conf.ClusterAddress)
+	leraderAddr := utils.GetLeader(conf.RaftListenPeer)
 	if leraderAddr == "" { // 如果是空，则以leader启动，否则以follower身份加入集群
 		raftServer.BootstrapCluster(configuration)
 	} else {
@@ -131,10 +131,7 @@ func NewServer(conf conf.ConfigRaft, port int, grpcConf conf.GrpcConf) {
 	go RunHealthCheck(badgerDB, raftServer)
 	go newGrpcServer(grpcConf, badgerDB)
 	// 开启http服务
-	srv := NewHttp(fmt.Sprintf(":%d", port), badgerDB, raftServer, conf.ClusterAddress)
-	if err := srv.Start(); err != nil {
-		panic(err)
-	}
+	NewHttp(fmt.Sprintf(":%d", port), fmt.Sprintf(":%d", conf.RaftHttpPort), badgerDB, raftServer, conf.RaftListenPeer)
 }
 
 func newGrpcServer(conf conf.GrpcConf, db *badger.DB) error {

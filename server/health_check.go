@@ -19,7 +19,6 @@ import (
 )
 
 func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
-	fmt.Print("run health check...")
 	for {
 		func() {
 			defer func() {
@@ -33,6 +32,7 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 				if r.State() != raft.Leader {
 					continue
 				}
+				fmt.Println("run health check...")
 				// 检测心跳
 				// 先拿出所有的ipvs信息
 				txn := badgerDB.NewTransaction(false)
@@ -109,7 +109,7 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 // @protocol tcp or udp
 // @return 0 succeed 1 failed
 func telnet(protocol string, host string, port string) int {
-	conn, err := net.Dial(protocol, host+":"+port)
+	conn, err := net.DialTimeout(protocol, host+":"+port, 500*time.Millisecond)
 	if err != nil {
 		fmt.Printf("Port %s is closed\n", host+":"+port)
 		fmt.Println(err)

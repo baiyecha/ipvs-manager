@@ -16,15 +16,16 @@ import (
 // configRaft configuration for raft node
 
 const (
-	serverType       = "SERVER_TYPE"  // 服务是何类型根据类型启动不同的功能
-	serverPort       = "SERVER_PORT"  // http服务的端口
-	raftNodeId       = "RAFT_NODE_ID" // node的id
-	raftVolDir       = "RAFT_VOL_DIR" // raft 信息和kv数据库的文件目录
-	grpcAddress      = "GRPC_ADDRESS" // agent对接的grpc地址列表
-	clusterAddress   = "CLUSTER"      // 集群所有节点的http地址，用对接raft
-	clusterAdvertise = "ADVERTIES"    // 集群raft广播出来的地址，集群之间用这个地址通信
-	grpcPort         = "GRPC_PORT"    // grpc的监听地址
-	dummyName        = "DUMMY_NAME"   // ipvs网卡的名字
+	serverType       = "SERVER_TYPE"      // 服务是何类型根据类型启动不同的功能
+	serverPort       = "SERVER_PORT"      // http服务的端口
+	raftNodeId       = "RAFT_NODE_ID"     // node的id
+	raftVolDir       = "RAFT_VOL_DIR"     // raft 信息和kv数据库的文件目录
+	grpcAddress      = "GRPC_ADDRESS"     // agent对接的grpc地址列表
+	raftListenPeer   = "RAFT_LISTEN_PEER" // 集群所有节点的http地址，用对接raft
+	clusterAdvertise = "ADVERTIES"        // 集群raft广播出来的地址，集群之间用这个地址通信
+	grpcPort         = "GRPC_PORT"        // grpc的监听地址
+	dummyName        = "DUMMY_NAME"       // ipvs网卡的名字
+	raftHttpPort     = "RAFT_HTTP_PORT"
 )
 
 var confKeys = []string{
@@ -33,9 +34,10 @@ var confKeys = []string{
 	raftNodeId,
 	raftVolDir,
 	grpcAddress,
-	clusterAddress,
+	raftListenPeer,
 	clusterAdvertise,
 	dummyName,
+	raftHttpPort,
 }
 
 // main entry point of application start
@@ -50,27 +52,29 @@ func main() {
 
 	// 使用命令行解析
 	pflag.String("server_type", "", "启动方式，默认是只启动server服务编辑ipvs策略, singleon 为all-in-one模式，agent为部署agent控制ipvs")
-	pflag.Int("server_port", 8010, "http的端口服务")
+	pflag.Int("server_port", 8010, "web http的端口服务")
 	pflag.String("raft_node_id", "raft", "raft 的节点id,每个节点需要保持唯一")
 	pflag.String("raft_vol_dir", "node_1_data", "raft⋅信息和kv数据库的文件目录")
 	pflag.String("grpc_address", "127.0.0.1:8210", "agent对接的grpc地址列表")
-	pflag.String("cluster", "127.0.0.1:8010", "集群所有节点的http地址，用来对接raft")
+	pflag.String("raft_listen_peer", "127.0.0.1:8111", "集群所有节点的http地址，用来对接raft")
 	pflag.String("adverties", "127.0.0.1:8110", "集群raft广播出来的地址，集群之间用这个地址通信")
 	pflag.Int("grpc_port", 8210, "grpc的监听地址")
 	pflag.String("dummy_name", "ipvs-manager", "ipvs dummy网卡的名字")
+	pflag.Int("raft_http_port", 8111, "raft 服务相关的http端口")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
-	cluster := strings.Split(viper.GetString(clusterAddress), ",")
+	cluster := strings.Split(viper.GetString(raftListenPeer), ",")
 	conf := conf.Config{
 		Server: conf.ConfigServer{
 			Port:           viper.GetInt(serverPort),
-			ClusterAddress: cluster,
+			RaftListenPeer: cluster,
 		},
 		Raft: conf.ConfigRaft{
 			NodeId:           viper.GetString(raftNodeId),
 			VolumeDir:        viper.GetString(raftVolDir),
-			ClusterAddress:   cluster,
+			RaftListenPeer:   cluster,
 			ClusterAdvertise: viper.GetString(clusterAdvertise),
+			RaftHttpPort:     viper.GetInt(raftHttpPort),
 		},
 		Agent: conf.AgentConf{
 			GrpcAddress: strings.Split(viper.GetString(grpcAddress), ","),

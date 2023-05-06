@@ -3,9 +3,9 @@
 ### 集群启动
 server端
 ```
-./ipvs-manager  --raft_node_id node0 --adverties 192.168.143.77:8110 --cluster 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
-./ipvs-manager  --raft_node_id node1 --adverties 192.168.143.78:8110 --cluster 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
-./ipvs-manager  --raft_node_id node2 --adverties 192.168.143.80:8110 --cluster 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
+./ipvs-manager  --raft_node_id node0 --adverties 192.168.143.77:8110 --raft_listen_peer 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
+./ipvs-manager  --raft_node_id node1 --adverties 192.168.143.78:8110 --raft_listen_peer 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
+./ipvs-manager  --raft_node_id node2 --adverties 192.168.143.80:8110 --raft_listen_peer 192.168.143.77:8010,192.168.143.78:8010,192.168.143.80:8010
 ```
 agent 端
 ```
@@ -13,17 +13,18 @@ ipvs-manage --server_type agent --grpc_address 192.168.143.77:8210,192.168.143.7
 ```
 参数说明
 ```
-[root@raft0 tuzhigen]# ./ipvs-manager -h
+[root@raft1 tuzhigen]# ./ipvs-manager -h
 Usage of ./ipvs-manager:
-      --adverties string      集群raft广播出来的地址，集群之间用这个地址通信 (default "127.0.0.1:8110")
-      --cluster string        集群所有节点的http地址，用来对接raft (default "127.0.0.1:8110")
-      --dummy_name string     ipvs dummy网卡的名字 (default "ipvs-manager")
-      --grpc_address string   agent对接的grpc地址列表 (default "127.0.0.1:8210")
-      --grpc_port int         grpc的监听地址 (default 8210)
-      --raft_node_id string   raft 的节点id,每个节点需要保持唯一 (default "raft")
-      --raft_vol_dir string   raft⋅信息和kv数据库的文件目录 (default "node_1_data")
-      --server_port int       http的端口服务 (default 8010)
-      --server_type string    启动方式，默认是只启动server服务编辑ipvs策略, singleon 为all-in-one模式，agent为部署agent控制ipvs
+      --adverties string          集群raft广播出来的地址，集群之间用这个地址通信 (default "127.0.0.1:8110")
+      --dummy_name string         ipvs dummy网卡的名字 (default "ipvs-manager")
+      --grpc_address string       agent对接的grpc地址列表 (default "127.0.0.1:8210")
+      --grpc_port int             grpc的监听地址 (default 8210)
+      --raft_http_port int        raft 服务相关的http端口 (default 8111)
+      --raft_listen_peer string   集群所有节点的http地址，用来对接raft (default "127.0.0.1:8111")
+      --raft_node_id string       raft 的节点id,每个节点需要保持唯一 (default "raft")
+      --raft_vol_dir string       raft⋅信息和kv数据库的文件目录 (default "node_1_data")
+      --server_port int           web http的端口服务 (default 8010)
+      --server_type string        启动方式，默认是只启动server服务编辑ipvs策略, singleon 为all-in-one模式，agent为部署agent控制ipvs
 ```
 使用-h 查看各个参数说明
 
@@ -35,7 +36,7 @@ ipvs-manage --server_type singleon
 
 ## raft 模块说明
 1. server
-server模块提供一个http服务，提供两种接口
+server模块提供两个http服务
 a. 数据库的增删查改和web界面
 b. raft集群的管理接口
 

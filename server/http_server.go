@@ -77,14 +77,17 @@ var table string
 var jquery string
 
 // New return new server
-func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) *srv {
+func NewHttp(listenAddr string, raftHttpListenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) {
+	go newWebHttp(listenAddr, badgerDB, r, clusterAddress)
+	go newRaftHttp(raftHttpListenAddr, badgerDB, r, clusterAddress)
+	signal := make(chan int)
+	<-signal
+}
+
+func newWebHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) {
 	e := echo.New()
 	t := template.Must(template.New("index.html").Parse(index))
 	t = template.Must(t.New("jquery").Parse(jquery))
-
-	//option0 := "<option value=0\" + `${item.check_type===0?\" selected\":\"\"}` + \">tcp</option>"
-	//option1 := "<option value=1\" + `${item.check_type===1?\" selected\":\"\"}` + \">http</option>"
-	//option2 := "<option value=2\" + `${item.check_type===2?\" selected\":\"\"}` + \">udp</option>"
 
 	renderer := &TemplateRenderer{
 		templates: template.Must(t.New("table.html").Parse(table)),
@@ -104,6 +107,29 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 	e.GET("/", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "index.html", nil)
 	})
+	storeHandler := store_handler.New(r, badgerDB, clusterAddress)
+
+	// table页面
+	e.GET("/table", storeHandler.Table)
+
+	// 更新ipvs
+	e.POST("/update", storeHandler.Update)
+	fmt.Println("web server start listen on ", listenAddr)
+	s := &srv{
+		listenAddress: listenAddr,
+		echo:          e,
+		raft:          r,
+	}
+	s.Start()
+}
+
+func newRaftHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) {
+	e := echo.New()
+
+	e.HideBanner = true
+	e.HidePort = true
+	e.Pre(middleware.RemoveTrailingSlash())
+	e.GET("/debug/pprof/*", echo.WrapHandler(http.DefaultServeMux))
 
 	// Raft server
 	raftHandler := raft_handler.New(r)
@@ -117,15 +143,11 @@ func NewHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddres
 	e.GET("/store/:key", storeHandler.Get)
 	e.DELETE("/store/:key", storeHandler.Delete)
 
-	// table页面
-	e.GET("/table", storeHandler.Table)
-
-	// 更新ipvs
-	e.POST("/update", storeHandler.Update)
-	fmt.Println("web server start listen on ", listenAddr)
-	return &srv{
+	fmt.Println("raft http server start listen on ", listenAddr)
+	s := &srv{
 		listenAddress: listenAddr,
 		echo:          e,
 		raft:          r,
 	}
+	s.Start()
 }
