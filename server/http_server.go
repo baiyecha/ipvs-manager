@@ -9,6 +9,8 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	"baiyecha/ipvs-manager/constant"
+	"baiyecha/ipvs-manager/server/jwt"
 	"baiyecha/ipvs-manager/server/login_handler"
 	"baiyecha/ipvs-manager/server/raft_handler"
 	"baiyecha/ipvs-manager/server/store_handler"
@@ -73,6 +75,9 @@ var index string
 //go:embed assets/table.html
 var table string
 
+//go:embed assets/agent.html
+var agent string
+
 //go:embed assets/jquery.min.js
 var jquery string
 
@@ -87,6 +92,7 @@ func NewHttp(listenAddr string, raftHttpListenAddr string, badgerDB *badger.DB, 
 func newWebHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) {
 	e := echo.New()
 	t := template.Must(template.New("index.html").Parse(index))
+	t = template.Must(t.New("agent.html").Parse(agent))
 	t = template.Must(t.New("jquery").Parse(jquery))
 
 	renderer := &TemplateRenderer{
@@ -109,11 +115,16 @@ func newWebHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAdd
 	})
 	storeHandler := store_handler.New(r, badgerDB, clusterAddress)
 
+	middleware.DefaultJWTConfig.TokenLookup = fmt.Sprintf("cookie:%s", constant.CookieName)
+
+	// 没有做路由分组，需要在每个路由后面追加JWT中间件
+	//e.Use(middleware.JWT(jwt.MySigningKey))
 	// table页面
-	e.GET("/table", storeHandler.Table)
+	e.GET("/table", storeHandler.Table, middleware.JWT(jwt.MySigningKey))
+	e.GET("/serviceInfo", storeHandler.ServiceInfo, middleware.JWT(jwt.MySigningKey))
 
 	// 更新ipvs
-	e.POST("/update", storeHandler.Update)
+	e.POST("/update", storeHandler.Update, middleware.JWT(jwt.MySigningKey))
 	fmt.Println("web server start listen on ", listenAddr)
 	s := &srv{
 		listenAddress: listenAddr,

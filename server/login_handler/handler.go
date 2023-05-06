@@ -1,6 +1,7 @@
 package login_handler
 
 import (
+	"baiyecha/ipvs-manager/server/jwt"
 	"net/http"
 
 	"baiyecha/ipvs-manager/constant"
@@ -15,12 +16,17 @@ func Login(c echo.Context) error {
 		return c.String(http.StatusOK, "密码错误！")
 	}
 	// 初始化cookie对象
+	var maxAge = 3600 // 有效期，秒
 	cookie := new(http.Cookie)
 	cookie.Name = constant.CookieName
-	cookie.Value = constant.NameAndPwd
+	var err error
+	cookie.Value, err = jwt.GenerateToken(maxAge)
+	if err != nil {
+		return err
+	}
 	cookie.Path = "/"
 	// cookie有效期为3600秒
-	cookie.MaxAge = 3600
+	cookie.MaxAge = maxAge
 
 	// 设置cookie
 	c.SetCookie(cookie)

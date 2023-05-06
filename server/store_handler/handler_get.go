@@ -71,12 +71,48 @@ func (h handler) Get(eCtx echo.Context) error {
 	})
 }
 
+func (h handler) ServiceInfo(eCtx echo.Context) error {
+	// ServiceInfo页面
+	// todo
+	si := model.ServiceInfo{
+		Servers: []*model.NodeInfo{
+			{
+				IP:            "1.1.1.1",
+				RpcPort:       "80",
+				WebPort:       "8000",
+				IsLeader:      "是",
+				LastHeartTime: "2023/1/1",
+				Status:        "正常",
+			},
+			{
+				IP:            "1.1.1.2",
+				RpcPort:       "81",
+				WebPort:       "8001",
+				IsLeader:      "是",
+				LastHeartTime: "2023/1/2",
+				Status:        "异常",
+			},
+		},
+		Agents: []*model.NodeInfo{
+			{
+				IP:            "1.1.1.3",
+				RpcPort:       "82",
+				WebPort:       "8002",
+				IsLeader:      "是",
+				LastHeartTime: "2023/1/3",
+				Status:        "异常",
+			},
+		},
+	}
+	return eCtx.Render(http.StatusOK, "agent.html", &si)
+}
+
 func (h handler) Table(eCtx echo.Context) error {
 	// table页面
-	cookie, err := eCtx.Cookie(constant.CookieName)
-	if err != nil || cookie.Value != constant.NameAndPwd {
-		return eCtx.Redirect(http.StatusMovedPermanently, "/")
-	}
+	//cookie, err := eCtx.Cookie(constant.CookieName)
+	//if err != nil || cookie.Value != constant.NameAndPwd {
+	//	return eCtx.Redirect(http.StatusMovedPermanently, "/")
+	//}
 	// 先拿出所有的ipvs信息
 	txn := h.db.NewTransaction(false)
 	ipvsList := &model.IpvsList{}

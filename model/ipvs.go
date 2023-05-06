@@ -45,3 +45,17 @@ type RaftStatsResp struct {
 	Data    RaftStatsData `json:"data"`
 	Message string        `json:"message"`
 }
+
+type NodeInfo struct {
+	IP            string `json:"ip"`
+	RpcPort       string `json:"rpc_port"`
+	WebPort       string `json:"web_port"`
+	IsLeader      string `json:"is_leader"`
+	LastHeartTime string `json:"last_heart_time"`
+	Status        string `json:"status"`
+}
+
+type ServiceInfo struct {
+	Servers []*NodeInfo `json:"servers"`
+	Agents  []*NodeInfo `json:"agents"`
+}
