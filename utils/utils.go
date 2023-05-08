@@ -9,7 +9,7 @@ import (
 )
 
 func GetLeader(address []string) string {
-	fmt.Println("address", address)
+	// fmt.Println("address", address)
 	leaderAddr := ""
 	for _, addr := range address {
 		res, err := grequests.Get(fmt.Sprintf("http://%s/raft/stats", addr), &grequests.RequestOptions{})
@@ -22,9 +22,9 @@ func GetLeader(address []string) string {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Printf("GetLeader res: status: %d , data: %+v \n",res.StatusCode, resp)
+		// fmt.Printf("GetLeader res: status: %d , data: %+v \n",res.StatusCode, resp)
 		if resp.Data.State == raft.Leader.String() {
-			fmt.Println("leader is ", addr)
+			// fmt.Println("leader is ", addr)
 			leaderAddr = addr
 			break
 		}

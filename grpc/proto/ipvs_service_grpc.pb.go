@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.21.12
-// source: ipvs_service.proto
+// source: grpc/proto/ipvs_service.proto
 
 package __
 
@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IpvsListServiceClient interface {
-	// 一个简单的rpc 获取所有的ipvs规则列表
+	// 一个简单的rpc 获取所有的ipvs规则列表,并且会上报自己的ip做心跳
 	IpvsList(ctx context.Context, in *IpvsListRequeste, opts ...grpc.CallOption) (*IpvsListResponse, error)
 }
 
@@ -51,7 +51,7 @@ func (c *ipvsListServiceClient) IpvsList(ctx context.Context, in *IpvsListReques
 // All implementations must embed UnimplementedIpvsListServiceServer
 // for forward compatibility
 type IpvsListServiceServer interface {
-	// 一个简单的rpc 获取所有的ipvs规则列表
+	// 一个简单的rpc 获取所有的ipvs规则列表,并且会上报自己的ip做心跳
 	IpvsList(context.Context, *IpvsListRequeste) (*IpvsListResponse, error)
 	mustEmbedUnimplementedIpvsListServiceServer()
 }
@@ -107,5 +107,5 @@ var IpvsListService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "ipvs_service.proto",
+	Metadata: "grpc/proto/ipvs_service.proto",
 }

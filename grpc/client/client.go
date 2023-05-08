@@ -20,11 +20,11 @@ func NewGrpClient(address ...string) *IpvsClient {
 	}
 }
 
-func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
+func (client *IpvsClient) GetIpvsList(agentAdvertise string) (*model.IpvsList, error) {
 	var err error
 	for _, addr := range client.address {
-		var ipvsListResponse  *pb.IpvsListResponse
-		ipvsListResponse, err = doGetIpvsList(addr)
+		var ipvsListResponse *pb.IpvsListResponse
+		ipvsListResponse, err = doGetIpvsList(addr, agentAdvertise)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -36,14 +36,16 @@ func (client *IpvsClient) GetIpvsList() (*model.IpvsList, error) {
 	return nil, err
 }
 
-func doGetIpvsList(address string) (*pb.IpvsListResponse, error) {
+func doGetIpvsList(address string, agentAdvertise string) (*pb.IpvsListResponse, error) {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 	c := pb.NewIpvsListServiceClient(conn)
-	reqBody := &pb.IpvsListRequeste{}
+	reqBody := &pb.IpvsListRequeste{
+		Ip: agentAdvertise,
+	}
 	res, err := c.IpvsList(context.Background(), reqBody)
 	if err != nil {
 		return nil, err
@@ -66,9 +68,9 @@ func transformIpvsList(ipvsListResponse *pb.IpvsListResponse) *model.IpvsList {
 			})
 		}
 		ipvsList.List = append(ipvsList.List, &model.Ipvs{
-			Backends: backends,
-			VIP: ipvs.Vip,
-			Protocol: ipvs.Protocol,
+			Backends:  backends,
+			VIP:       ipvs.Vip,
+			Protocol:  ipvs.Protocol,
 			SchedName: ipvs.SchedName,
 		})
 	}

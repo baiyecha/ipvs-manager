@@ -14,8 +14,9 @@ type ConfigServer struct {
 	RaftListenPeer []string `mapstructure:"raft_listen_peer"`
 }
 type AgentConf struct {
-	GrpcAddress []string `mapstructure:"grpc_address"`
-	DummtName   string   `mapstructure:"dummy_name"`
+	GrpcAddress    []string `mapstructure:"grpc_address"`
+	DummtName      string   `mapstructure:"dummy_name"`
+	AgentAdvertise string   `mapstructure:"agent_advertise"`
 }
 
 type GrpcConf struct {

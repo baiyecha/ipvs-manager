@@ -10,9 +10,13 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
+	"runtime/debug"
+	"strconv"
 	"time"
 
+	"baiyecha/ipvs-manager/constant"
 	pb "baiyecha/ipvs-manager/grpc/proto"
+	"baiyecha/ipvs-manager/model"
 
 	"baiyecha/ipvs-manager/conf"
 	"baiyecha/ipvs-manager/fsm"
@@ -36,10 +40,6 @@ const (
 	// https://github.com/hashicorp/raft/blob/v1.1.2/net_transport.go#L177-L181
 	tcpTimeout = 10 * time.Second
 
-	// The `retain` parameter controls how many
-	// snapshots are retained. Must be at least 1.
-	raftSnapShotRetain = 2
-
 	// raftLogCacheSize is the maximum number of logs to cache in-memory.
 	// This is used to reduce disk I/O for the recently committed entries.
 	raftLogCacheSize = 512
@@ -54,7 +54,9 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 
 	raftConf := raft.DefaultConfig()
 	raftConf.LocalID = raft.ServerID(conf.NodeId)
-	raftConf.SnapshotThreshold = 1024
+	raftConf.SnapshotThreshold = 20
+	raftConf.SnapshotInterval = 60 * time.Second
+	raftConf.LogLevel = "warn"
 
 	fsmStore := fsm.NewBadger(db)
 
@@ -111,7 +113,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 }
 
 // port is http port
-func NewServer(conf conf.ConfigRaft, port int, grpcConf conf.GrpcConf) {
+func NewServer(conf conf.ConfigRaft, port int, grpcConf conf.GrpcConf, c conf.Config) {
 	badgerOpt := badger.DefaultOptions(conf.VolumeDir)
 	badgerDB, err := badger.Open(badgerOpt)
 	if err != nil {
@@ -129,19 +131,43 @@ func NewServer(conf conf.ConfigRaft, port int, grpcConf conf.GrpcConf) {
 	}
 	// 开始心跳检测
 	go RunHealthCheck(badgerDB, raftServer)
-	go newGrpcServer(grpcConf, badgerDB)
+	go newGrpcServer(grpcConf, badgerDB, conf.RaftListenPeer)
+	go heartbeat(badgerDB, c, raftServer)
 	// 开启http服务
 	NewHttp(fmt.Sprintf(":%d", port), fmt.Sprintf(":%d", conf.RaftHttpPort), badgerDB, raftServer, conf.RaftListenPeer)
 }
 
-func newGrpcServer(conf conf.GrpcConf, db *badger.DB) error {
+func heartbeat(db *badger.DB, conf conf.Config, r *raft.Raft) {
+	ip, _, _ := net.SplitHostPort(conf.Raft.ClusterAdvertise)
+	for {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println("heartbeat task error", "err", r, "stack", string(debug.Stack()))
+				}
+			}()
+			for {
+				// 定时请求进行心跳检测
+				store_handler.Heartbeat(db, &model.NodeInfo{
+					IP:       ip,
+					RpcPort:  strconv.Itoa(conf.Grpc.Port),
+					WebPort:  strconv.Itoa(conf.Server.Port),
+					IsLeader: strconv.FormatBool(r.State() == raft.Leader),
+				}, constant.ServerRule, conf.Server.RaftListenPeer)
+				time.Sleep(30 * time.Second)
+			}
+		}()
+	}
+}
+
+func newGrpcServer(conf conf.GrpcConf, db *badger.DB, clusterAddress []string) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", conf.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 		return err
 	}
 	s := grpc.NewServer()
-	pb.RegisterIpvsListServiceServer(s, store_handler.NewGrpcStoreServer(db))
+	pb.RegisterIpvsListServiceServer(s, store_handler.NewGrpcStoreServer(db, clusterAddress))
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	if err = s.Serve(lis); err != nil {

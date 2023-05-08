@@ -3,11 +3,12 @@ package fsm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/hashicorp/raft"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/hashicorp/raft"
 )
 
 // badgerFSM raft.FSM implementation using badgerDB
@@ -146,6 +147,7 @@ func (b badgerFSM) Restore(rClose io.ReadCloser) error {
 	}()
 
 	_, _ = fmt.Fprintf(os.Stdout, "[START RESTORE] read all message from snapshot\n")
+	fmt.Printf("[START RESTORE] read all message from snapshot\n")
 	var totalRestored int
 
 	decoder := json.NewDecoder(rClose)
@@ -168,11 +170,14 @@ func (b badgerFSM) Restore(rClose io.ReadCloser) error {
 	// read closing bracket
 	_, err := decoder.Token()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stdout, "[END RESTORE] error %s\n", err.Error())
-		return err
+		if err != io.EOF {
+			_, _ = fmt.Fprintf(os.Stdout, "[END RESTORE] error %s\n", err.Error())
+			return err
+		}
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "[END RESTORE] success restore %d messages in snapshot\n", totalRestored)
+	fmt.Printf("[END RESTORE] success restore %d messages in snapshot\n", totalRestored)
 	return nil
 }
 

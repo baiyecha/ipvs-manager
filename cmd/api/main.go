@@ -26,19 +26,21 @@ const (
 	grpcPort         = "GRPC_PORT"        // grpc的监听地址
 	dummyName        = "DUMMY_NAME"       // ipvs网卡的名字
 	raftHttpPort     = "RAFT_HTTP_PORT"
+	agentAdvertise   = "AGENT_ADVERTISE"
 )
 
-var confKeys = []string{
-	serverType,
-	serverPort,
-	raftNodeId,
-	raftVolDir,
-	grpcAddress,
-	raftListenPeer,
-	clusterAdvertise,
-	dummyName,
-	raftHttpPort,
-}
+// var confKeys = []string{
+// 	serverType,
+// 	serverPort,
+// 	raftNodeId,
+// 	raftVolDir,
+// 	grpcAddress,
+// 	raftListenPeer,
+// 	clusterAdvertise,
+// 	dummyName,
+// 	raftHttpPort,
+// 	agentAdvertise,
+// }
 
 // main entry point of application start
 // run using CONFIG=config.yaml ./program
@@ -50,8 +52,8 @@ func main() {
 	// 	return
 	// }
 
-	// 使用命令行解析
-	pflag.String("server_type", "", "启动方式，默认是只启动server服务编辑ipvs策略, singleon 为all-in-one模式，agent为部署agent控制ipvs")
+	// 使用命令行解e
+	pflag.String("server_type", "", "启动方式,默认是只启动server服务编辑ipvs策略, singleon 为all-in-one模式，agent为部署agent控制ipvs")
 	pflag.Int("server_port", 8010, "web http的端口服务")
 	pflag.String("raft_node_id", "raft", "raft 的节点id,每个节点需要保持唯一")
 	pflag.String("raft_vol_dir", "node_1_data", "raft⋅信息和kv数据库的文件目录")
@@ -61,6 +63,7 @@ func main() {
 	pflag.Int("grpc_port", 8210, "grpc的监听地址")
 	pflag.String("dummy_name", "ipvs-manager", "ipvs dummy网卡的名字")
 	pflag.Int("raft_http_port", 8111, "raft 服务相关的http端口")
+	pflag.String("agent_advertise", "127.0.0.1", "agent 的广播ip 用来上报心跳")
 	viper.BindPFlags(pflag.CommandLine)
 	pflag.Parse()
 	cluster := strings.Split(viper.GetString(raftListenPeer), ",")
@@ -77,8 +80,9 @@ func main() {
 			RaftHttpPort:     viper.GetInt(raftHttpPort),
 		},
 		Agent: conf.AgentConf{
-			GrpcAddress: strings.Split(viper.GetString(grpcAddress), ","),
-			DummtName:   viper.GetString(dummyName),
+			GrpcAddress:    strings.Split(viper.GetString(grpcAddress), ","),
+			DummtName:      viper.GetString(dummyName),
+			AgentAdvertise: viper.GetViper().GetString(agentAdvertise),
 		},
 		Grpc: conf.GrpcConf{
 			Port: viper.GetInt(grpcPort),
@@ -93,10 +97,10 @@ func main() {
 			time.Sleep(3 * time.Second)
 			ipvsAgent.RunAgent(conf.Agent)
 		}()
-		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc)
+		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc, conf)
 	case "agent": // 单agent
 		ipvsAgent.RunAgent(conf.Agent)
 	default: // 默认启动server
-		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc)
+		server.NewServer(conf.Raft, conf.Server.Port, conf.Grpc, conf)
 	}
 }

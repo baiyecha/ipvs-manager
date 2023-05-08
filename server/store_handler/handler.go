@@ -1,9 +1,10 @@
 package store_handler
 
 import (
+	pb "baiyecha/ipvs-manager/grpc/proto"
+
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
-	pb "baiyecha/ipvs-manager/grpc/proto"
 )
 
 // handler struct handler
@@ -20,12 +21,16 @@ func New(raft *raft.Raft, db *badger.DB, clusterAddress []string) *handler {
 		clusterAddress: clusterAddress,
 	}
 }
+
 type GrpcStoreServer struct {
 	pb.UnimplementedIpvsListServiceServer
-	db *badger.DB
+	db             *badger.DB
+	clusterAddress []string
 }
- func NewGrpcStoreServer(db *badger.DB)*GrpcStoreServer{
-	 return &GrpcStoreServer{
-		 db: db,
-	 }
- }
+
+func NewGrpcStoreServer(db *badger.DB, clusterAddress []string) *GrpcStoreServer {
+	return &GrpcStoreServer{
+		db:             db,
+		clusterAddress: clusterAddress,
+	}
+}

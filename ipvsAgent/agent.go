@@ -21,7 +21,7 @@ func RunAgent(agentConf conf.AgentConf) error {
 			}()
 			for {
 				// 定时请求server端，拿到ipvs信息
-				ipvsList, err := getIpvs(agentConf.GrpcAddress)
+				ipvsList, err := getIpvs(agentConf.GrpcAddress, agentConf.AgentAdvertise)
 				if err != nil {
 					fmt.Print("any addr is connection fail")
 					time.Sleep(5 * time.Second)
@@ -39,9 +39,9 @@ func RunAgent(agentConf conf.AgentConf) error {
 	}
 }
 
-func getIpvs(address []string) (ipvsList *model.IpvsList, err error) {
+func getIpvs(address []string, agentAdvertise string) (ipvsList *model.IpvsList, err error) {
 	c := client.NewGrpClient(address...)
-	ipvsList, err = c.GetIpvsList()
+	ipvsList, err = c.GetIpvsList(agentAdvertise)
 	if err != nil {
 		return nil, err
 	}

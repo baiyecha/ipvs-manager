@@ -5,6 +5,7 @@ package ipvs;
 option go_package = "./";
 
 message IpvsListRequeste{
+	string ip=1;
 }
 
 message IpvsListResponse{
@@ -27,6 +28,6 @@ message Ipvs{
 
 
 service IpvsListService{
-	// 一个简单的rpc 获取所有的ipvs规则列表
+	// 一个简单的rpc 获取所有的ipvs规则列表,并且会上报自己的ip做心跳
 	rpc IpvsList(IpvsListRequeste) returns (IpvsListResponse) {};
 }
