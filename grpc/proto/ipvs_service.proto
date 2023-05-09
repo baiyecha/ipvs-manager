@@ -17,6 +17,8 @@ message Backend{
 	int64 status=3;
 	int64 check_type=4;
 	string check_info=5;
+	int64 check_res_type=6;
+	string check_res=7;
 }
 
 message Ipvs{
@@ -25,7 +27,6 @@ message Ipvs{
 	string protocol=3;
 	string sched_name=4;
 }
-
 
 service IpvsListService{
 	// 一个简单的rpc 获取所有的ipvs规则列表,并且会上报自己的ip做心跳

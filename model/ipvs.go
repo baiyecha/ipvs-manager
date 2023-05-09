@@ -8,11 +8,13 @@ type Ipvs struct {
 }
 
 type Backend struct {
-	Addr      string `json:"addr"`
-	Weight    int    `json:"weight"`
-	Status    int    `json:"status"`     // ipvs后端的健康状态，1为不健康，0为健康
-	CheckType int    `json:"check_type"` // 0 为tcp 1为http
-	CheckInfo string `json:"check_info"` // 检查的地址，如果type是tcp，那么使用tcp检查，这里为空的时候用addr进行，如果是http，这这里必须为一个可以get的http的地址
+	Addr         string `json:"addr"`
+	Weight       int    `json:"weight"`
+	Status       int    `json:"status"`         // ipvs后端的健康状态，1为不健康，0为健康
+	CheckType    int    `json:"check_type"`     // 0 为tcp 1为http
+	CheckInfo    string `json:"check_info"`     // 检查的地址，如果type是tcp，那么使用tcp检查，这里为空的时候用addr进行，如果是http，这这里必须为一个可以get的http的地址
+	CheckResType int    `json:"check_res_type"` // 检查结果方式 0 为 检查状态码，1 为检查body 内容
+	CheckRes     string `json:"check_res"`      // 检查结果是否符合用户定义的正则表达式
 }
 
 type IpvsList struct {

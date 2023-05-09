@@ -5,12 +5,12 @@ build: install
 	ls -al
 	rm -rf artifacts
 	GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -o  release/ipvs-manager  $(PACKAGE_NAME)/cmd/api
-	# scp ./release/ipvs-manager root@192.168.143.77:/root/tuzhigen/
-	# scp ./release/ipvs-manager root@192.168.143.78:/root/tuzhigen/
-	# scp ./release/ipvs-manager root@192.168.143.80:/root/tuzhigen/
+	scp ./release/ipvs-manager root@192.168.143.77:/root/tuzhigen/
+	scp ./release/ipvs-manager root@192.168.143.78:/root/tuzhigen/
+	scp ./release/ipvs-manager root@192.168.143.80:/root/tuzhigen/
 	scp ./release/ipvs-manager root@192.168.143.228:/root/tuzhigen/
 
-build-mac:
+build-mac: install
 	ls -al
 	rm -rf artifacts
 	GO111MODULE=on CGO_ENABLED=0 go build -o  release/ipvs-manager  $(PACKAGE_NAME)/cmd/api

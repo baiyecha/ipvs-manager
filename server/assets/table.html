@@ -1,16 +1,19 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <script>
-        {{template "jquery"}}
+        {{template "jquery" }}
     </script>
     <style>
-        table, table tr th, table tr td {
+        table,
+        table tr th,
+        table tr td {
             border: 1px solid #0094ff;
         }
 
@@ -53,19 +56,21 @@
         $("#weight").val("")
         $("#check_type").val(0)
         $("#check_info").val("")
+        $("#check_res_type").val(0)
+        $("#check_res").val("")
     }
 
     function deleteIpvs(id) {
         //console.log(id)
         ipvsList.splice(id, 1)
         $.ajax({
-            url         : 'update',
-            type        : 'POST',
-            dataType    : 'json',
-            contentType : 'application/json;charset=UTF-8',
-            data        : JSON.stringify({list:ipvsList}),
-            complete    : function (re) {
-                console.log("add re:",re)
+            url: 'update',
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json;charset=UTF-8',
+            data: JSON.stringify({ list: ipvsList }),
+            complete: function (re) {
+                console.log("add re:", re)
                 window.location.reload()
             }
         })
@@ -80,22 +85,24 @@
         $("#vip").val(ipvsList[index].vip)
         $("#protocol").val(ipvsList[index].protocol)
         $("#sched_name").val(ipvsList[index].sched_name)
-        ipvsList[index].backends.forEach((item,i)=>{
+        ipvsList[index].backends.forEach((item, i) => {
             if (i === 0) {
                 $("#addr").val(item.addr)
                 $("#weight").val(item.weight)
                 $("#check_type").val(item.check_type)
                 $("#check_info").val(item.check_info)
+                $("#check_res_type").val(item.check_res_type)
+                $("#check_res").val(item.check_res)
             } else {
-                backends=i+1
+                backends = i + 1
                 $("#backends").append("<div id=\"backend" + backends + "\">\n" +
                     "            <label>\n" +
                     "                Addr:\n" +
-                    "                <input type=\"text\" name=\"addr\" value=\""+item.addr+"\">\n" +
+                    "                <input type=\"text\" name=\"addr\" value=\"" + item.addr + "\">\n" +
                     "            </label>\n" +
                     "            <label>\n" +
                     "                Weight:\n" +
-                    "                <input type=\"text\" name=\"weight\" value=\""+item.weight+"\">\n" +
+                    "                <input type=\"text\" name=\"weight\" value=\"" + item.weight + "\">\n" +
                     "            </label>\n" +
                     "            <label>\n" +
                     "                CheckType:\n" +
@@ -103,11 +110,22 @@
                     "			         <option value=\"0\" `${item.check_type===0?\" selected\":\"\"}`>tcp</option>\n" +
                     "			         <option value=\"1\" `${item.check_type===1?\" selected\":\"\"}`>http</option>\n" +
                     "			         <option value=\"2\" `${item.check_type===2?\" selected\":\"\"}`>upd</option>\n" +
-                    "	             </select>"+
+                    "	             </select>" +
                     "            </label>\n" +
                     "            <label>\n" +
                     "                CheckInfo:\n" +
-                    "                <input type=\"text\" name=\"check_info\" value=\""+item.check_info+"\">\n" +
+                    "                <input type=\"text\" name=\"check_info\" value=\"" + item.check_info + "\">\n" +
+                    "            </label>\n" +
+                    "            <label>\n" +
+                    "                CheckResType:\n" +
+                    "                <select name=\"check_res_type\">\n" +
+                    "			         <option value=\"0\" `${item.check_res_type===0?\" selected\":\"\"}`>tcp</option>\n" +
+                    "			         <option value=\"1\" `${item.check_res_type===1?\" selected\":\"\"}`>http</option>\n" +
+                    "	             </select>" +
+                    "            </label>\n" +
+                    "            <label>\n" +
+                    "                CheckRes:\n" +
+                    "                <input type=\"text\" name=\"check_res\" value=\"" + item.check_res + "\">\n" +
                     "            </label>\n" +
                     "            <button onclick=\"deleteBackend('backend" + backends + "')\">-</button>\n" +
                     "        </div>")
@@ -132,11 +150,22 @@
             "			         <option value=\"0\">tcp</option>\n" +
             "			         <option value=\"1\">http</option>\n" +
             "			         <option value=\"2\">upd</option>\n" +
-            "	             </select>"+
+            "	             </select>" +
             "            </label>\n" +
             "            <label>\n" +
             "                CheckInfo:\n" +
             "                <input type=\"text\" name=\"check_info\">\n" +
+            "            </label>\n" +
+            "            <label>\n" +
+            "                CheckResType:\n" +
+            "                <select name=\"check_res_type\" id=\"check_res_type\">\n" +
+            "			         <option value=\"0\">tcp</option>\n" +
+            "			         <option value=\"1\">http</option>\n" +
+            "	             </select>" +
+            "            </label>\n" +
+            "            <label>\n" +
+            "                CheckRes:\n" +
+            "                <input type=\"text\" name=\"check_res\">\n" +
             "            </label>\n" +
             "            <button onclick=\"deleteBackend('backend" + backends + "')\">-</button>\n" +
             "        </div>")
@@ -159,14 +188,19 @@
             } else if (item.name === "sched_name") {
                 ipvs.sched_name = item.value
             } else if (item.name === "addr") {
-                ipvs.backends.push({addr: item.value})
+                ipvs.backends.push({ addr: item.value })
             } else if (item.name === "weight") {
-                ipvs.backends[ipvs.backends.length-1].weight = Number(item.value)
+                ipvs.backends[ipvs.backends.length - 1].weight = Number(item.value)
             } else if (item.name === "check_type") {
-                ipvs.backends[ipvs.backends.length-1].check_type = Number(item.value)
+                ipvs.backends[ipvs.backends.length - 1].check_type = Number(item.value)
             } else if (item.name === "check_info") {
-                ipvs.backends[ipvs.backends.length-1].check_info = item.value
+                ipvs.backends[ipvs.backends.length - 1].check_info = item.value
+            } else if (item.name === "check_res_type") {
+                ipvs.backends[ipvs.backends.length - 1].check_res_type = Number(item.value)
+            } else if (item.name === "check_res") {
+                ipvs.backends[ipvs.backends.length - 1].check_res = item.value
             }
+
         })
         if (operate === "add") {
             ipvsList.push(ipvs)
@@ -174,13 +208,13 @@
             ipvsList.splice(updateIndex, 1, ipvs)
         }
         $.ajax({
-            url         : 'update',
-            type        : 'POST',
-            dataType    : 'json',
-            contentType : 'application/json;charset=UTF-8',
-            data        : JSON.stringify({list:ipvsList}),
-            complete    : function (re) {
-                console.log("add re:",re)
+            url: 'update',
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json;charset=UTF-8',
+            data: JSON.stringify({ list: ipvsList }),
+            complete: function (re) {
+                console.log("add re:", re)
                 window.location.reload()
             }
         })
@@ -191,104 +225,126 @@
         console.log(ipvsList)
     })
 </script>
+
 <body>
-<button type="button" id="add" onclick="add()">新增</button>
-<a href="/logout"><button type="button">退出</button></a>
-<a href="/serviceInfo"><button type="button">集群状态</button></a>
-<table id="table">
+    <button type="button" id="add" onclick="add()">新增</button>
+    <a href="/logout"><button type="button">退出</button></a>
+    <a href="/serviceInfo"><button type="button">集群状态</button></a>
+    <table id="table">
 
-    <thead>
-    <tr>
-        <th>VIP</th>
-        <th>Protocol</th>
-        <th>SchedName</th>
-        <th>Addr</th>
-        <th>Weight</th>
-        <th>Status</th>
-        <th>CheckType</th>
-        <th>CheckInfo</th>
-        <th>操作</th>
-    </tr>
-    </thead>
-    <tbody>
-    {{- range $index1, $ipvs := .List}}
-    <tr>
-        <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.VIP }}</td>
-        <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.Protocol }}</td>
-        <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.SchedName }}</td>
-        {{- range $index, $backend := $ipvs.Backends}}
-        {{- if gt $index 0}}
-    </tr><tr>
-        {{- end}}
-        <td>{{ $backend.Addr }}</td>
-        <td>{{ $backend.Weight }}</td>
-        {{- if eq $backend.Status 0}}
-        <td>健康</td>
-        {{- else }}
-        <td>不健康</td>
-        {{- end}}
-        {{- if eq $backend.CheckType 0}}
-        <td>tcp</td>
-        {{- else if eq $backend.CheckType 1}}
-        <td>http</td>
-        {{- else }}
-        <td>udp</td>
-        {{- end}}
-        <td>{{ $backend.CheckInfo }}</td>
-        {{- if eq $index 0}}
-        <td rowspan="{{ len $ipvs.Backends}}">
-            <button type="button" onclick="update({{ $index1 }})">编辑</button>
-            <button type="button" onclick="deleteIpvs({{ $index1 }})">删除</button>
-        </td>
-        {{- end}}
-        {{- end}}
-    </tr>
-    {{- end}}
-    </tbody>
-</table>
-<form id="form" style="display: none;" action="/update" method="post" onsubmit="return false">
-    <label>
-        VIP:
-        <input id="vip" type="text" name="vip">
-    </label><br/>
-    <label>
-        Protocol:
-        <input id="protocol" type="text" name="protocol">
-    </label><br/>
-    <label>
-        SchedName:
-        <input id="sched_name" type="text" name="sched_name">
-    </label><br/>
-    Backends:
-    <div>
+        <thead>
+            <tr>
+                <th>VIP</th>
+                <th>Protocol</th>
+                <th>SchedName</th>
+                <th>Addr</th>
+                <th>Weight</th>
+                <th>Status</th>
+                <th>CheckType</th>
+                <th>CheckInfo</th>
+                <th>CheckResType</th>
+                <th>CheckRes</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{- range $index1, $ipvs := .List}}
+            <tr>
+                <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.VIP }}</td>
+                <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.Protocol }}</td>
+                <td rowspan="{{ len $ipvs.Backends}}">{{ $ipvs.SchedName }}</td>
+                {{- range $index, $backend := $ipvs.Backends}}
+                {{- if gt $index 0}}
+            </tr>
+            <tr>
+                {{- end}}
+                <td>{{ $backend.Addr }}</td>
+                <td>{{ $backend.Weight }}</td>
+                {{- if eq $backend.Status 0}}
+                <td>健康</td>
+                {{- else }}
+                <td>不健康</td>
+                {{- end}}
+                {{- if eq $backend.CheckType 0}}
+                <td>tcp</td>
+                {{- else if eq $backend.CheckType 1}}
+                <td>http</td>
+                {{- else }}
+                <td>udp</td>
+                {{- end}}
+                <td>{{ $backend.CheckInfo }}</td>
+                {{- if eq $backend.CheckResType 0}}
+                <td>rstatus</td>
+                {{- else }}
+                <td>rstring</td>
+                {{- end}}
+                <td>{{ $backend.CheckRes}}</td>
+                {{- if eq $index 0}}
+                <td rowspan="{{ len $ipvs.Backends}}">
+                    <button type="button" onclick="update({{ $index1 }})">编辑</button>
+                    <button type="button" onclick="deleteIpvs({{ $index1 }})">删除</button>
+                </td>
+                {{- end}}
+                {{- end}}
+            </tr>
+            {{- end}}
+        </tbody>
+    </table>
+    <form id="form" style="display: none;" action="/update" method="post" onsubmit="return false">
         <label>
-            Addr:
-            <input id="addr" type="text" name="addr">
-        </label>
+            VIP:
+            <input id="vip" type="text" name="vip">
+        </label><br />
         <label>
-            Weight:
-            <input id="weight" type="text" name="weight">
-        </label>
+            Protocol:
+            <input id="protocol" type="text" name="protocol">
+        </label><br />
         <label>
-            CheckType:
-            <select name="check_type" id="check_type">
-                <option value="0">tcp</option>
-                <option value="1">http</option>
-                <option value="2">upd</option>
-            </select>
-        </label>
-        <label>
-            CheckInfo:
-            <input id="check_info" type="text" name="check_info">
-        </label>
-        <button onclick="addBackend()">+</button>
-    </div>
-    <div id="backends">
+            SchedName:
+            <input id="sched_name" type="text" name="sched_name">
+        </label><br />
+        Backends:
+        <div>
+            <label>
+                Addr:
+                <input id="addr" type="text" name="addr">
+            </label>
+            <label>
+                Weight:
+                <input id="weight" type="text" name="weight">
+            </label>
+            <label>
+                CheckType:
+                <select name="check_type" id="check_type">
+                    <option value="0">tcp</option>
+                    <option value="1">http</option>
+                    <option value="2">upd</option>
+                </select>
+            </label>
+            <label>
+                CheckInfo:
+                <input id="check_info" type="text" name="check_info">
+            </label>
+            <label>
+                CheckResType:
+                <select name="check_res_type" id="check_res_type">
+                    <option value="0">rstatus</option>
+                    <option value="1">rstring</option>
+                </select>
+            </label>
+            <label>
+                CheckRes:
+                <input id="check_res" type="text" name="check_res">
+            </label>
+            <button onclick="addBackend()">+</button>
+        </div>
+        <div id="backends">
 
-    </div>
-    <br/>
-    <button onclick="addOrUpdate()">提交</button>
-    <button onclick="cancel()">取消</button>
-</form>
+        </div>
+        <br />
+        <button onclick="addOrUpdate()">提交</button>
+        <button onclick="cancel()">取消</button>
+    </form>
 </body>
+
 </html>

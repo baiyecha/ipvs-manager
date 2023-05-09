@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"regexp"
 	"runtime/debug"
+	"strconv"
 	"time"
 
 	"baiyecha/ipvs-manager/constant"
@@ -30,6 +32,7 @@ func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
 				// 定时请求进行心跳检测
 				// 先判断自身节点是否为leader
 				if r.State() != raft.Leader {
+					time.Sleep(5 * time.Second)
 					continue
 				}
 				fmt.Println("run health check...")
@@ -93,7 +96,7 @@ func doHealthCheck(ipvsList *model.IpvsList) (error, bool) {
 				ip, port, _ := net.SplitHostPort(addr)
 				status = telnet(ipvsData.Protocol, ip, port)
 			case 1: // http
-				status = httpCheck(backend.CheckInfo)
+				status = httpCheck(backend.CheckInfo, backend.CheckResType, backend.CheckRes)
 			default:
 				backend.Status = 1
 			}
@@ -115,18 +118,19 @@ func telnet(protocol string, host string, port string) int {
 		fmt.Println(err)
 		return 1
 	} else {
-		// fmt.Printf("Port %s is open\n", host+":"+port)
 		conn.Close()
+		// fmt.Printf("Port %s is open\n", host+":"+port)
 		return 0
 	}
 }
 
-func httpCheck(url string) int {
+func httpCheck(url string, checkResType int, checkRes string) int {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
 	}
+	defer tr.CloseIdleConnections()
 	res, err := grequests.Get(url, &grequests.RequestOptions{
 		HTTPClient: &http.Client{
 			Transport: tr,
@@ -136,11 +140,32 @@ func httpCheck(url string) int {
 		fmt.Println(err)
 		return 1
 	}
-	if res.StatusCode == http.StatusOK {
-		// fmt.Printf("check %s is ok!\n", url)
-		return 0
-	} else {
-		fmt.Printf("check %s is failed! status: %d\n", url, res.StatusCode)
+	switch checkResType {
+	case 0:
+		if checkRes == "" {
+			checkRes = "200"
+		}
+		return isMatch(strconv.Itoa(res.StatusCode), checkRes)
+	case 1:
+		if checkRes == "" {
+			checkRes = "ok"
+		}
+		return isMatch(res.String(), checkRes)
+	}
+	return 1
+}
+
+func isMatch(str string, pattern string) int {
+
+	// 编译正则表达式
+	reg := regexp.MustCompile(pattern)
+
+	// 使用正则表达式匹配字符串
+	result := reg.FindAllString(str, -1)
+
+	if len(result) == 0 {
 		return 1
+	} else {
+		return 0
 	}
 }

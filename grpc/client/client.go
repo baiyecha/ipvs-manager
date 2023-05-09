@@ -60,11 +60,13 @@ func transformIpvsList(ipvsListResponse *pb.IpvsListResponse) *model.IpvsList {
 		backends := make([]*model.Backend, 0)
 		for _, backend := range ipvs.Backends {
 			backends = append(backends, &model.Backend{
-				Addr:      backend.Addr,
-				Weight:    int(backend.Weight),
-				Status:    int(backend.Status),
-				CheckType: int(backend.CheckType),
-				CheckInfo: backend.CheckInfo,
+				Addr:         backend.Addr,
+				Weight:       int(backend.Weight),
+				Status:       int(backend.Status),
+				CheckType:    int(backend.CheckType),
+				CheckInfo:    backend.CheckInfo,
+				CheckResType: int(backend.GetCheckResType()),
+				CheckRes:     backend.CheckRes,
 			})
 		}
 		ipvsList.List = append(ipvsList.List, &model.Ipvs{
