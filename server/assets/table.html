@@ -95,6 +95,16 @@
                 $("#check_res").val(item.check_res)
             } else {
                 backends = i + 1
+                let option1 = "<option value=\"0\" selected>tcp</option>\n"+"<option value=\"1\">http</option>\n"+"<option value=\"2\">upd</option>\n"
+                if (item.check_type===1){
+                    option1 = "<option value=\"0\">tcp</option>\n"+"<option value=\"1\" selected>http</option>\n"+"<option value=\"2\">upd</option>\n"
+                } else if (item.check_type===2){
+                    option1 = "<option value=\"0\" >tcp</option>\n"+"<option value=\"1\">http</option>\n"+"<option value=\"2\" selected>upd</option>\n"
+                }
+                let option2 = "<option value=\"0\" selected>rstatus</option>\n"+"<option value=\"1\">rstring</option>\n"
+                if (item.check_res_type===1){
+                    option2 = "<option value=\"0\">rstatus</option>\n"+"<option value=\"1\" selected>rstring</option>\n"
+                } 
                 $("#backends").append("<div id=\"backend" + backends + "\">\n" +
                     "            <label>\n" +
                     "                Addr:\n" +
@@ -106,10 +116,7 @@
                     "            </label>\n" +
                     "            <label>\n" +
                     "                CheckType:\n" +
-                    "                <select name=\"check_type\">\n" +
-                    "			         <option value=\"0\" `${item.check_type===0?\" selected\":\"\"}`>tcp</option>\n" +
-                    "			         <option value=\"1\" `${item.check_type===1?\" selected\":\"\"}`>http</option>\n" +
-                    "			         <option value=\"2\" `${item.check_type===2?\" selected\":\"\"}`>upd</option>\n" +
+                    "                <select name=\"check_type\">\n" + option1 +
                     "	             </select>" +
                     "            </label>\n" +
                     "            <label>\n" +
@@ -118,9 +125,7 @@
                     "            </label>\n" +
                     "            <label>\n" +
                     "                CheckResType:\n" +
-                    "                <select name=\"check_res_type\">\n" +
-                    "			         <option value=\"0\" `${item.check_res_type===0?\" selected\":\"\"}`>rstatus</option>\n" +
-                    "			         <option value=\"1\" `${item.check_res_type===1?\" selected\":\"\"}`>rstring</option>\n" +
+                    "                <select name=\"check_res_type\">\n" + option2 + 
                     "	             </select>" +
                     "            </label>\n" +
                     "            <label>\n" +
