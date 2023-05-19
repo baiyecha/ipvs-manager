@@ -42,7 +42,7 @@ const (
 
 	// raftLogCacheSize is the maximum number of logs to cache in-memory.
 	// This is used to reduce disk I/O for the recently committed entries.
-	raftLogCacheSize = 512
+	raftLogCacheSize = 40
 )
 
 func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) {
@@ -57,6 +57,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 	raftConf.SnapshotThreshold = 20
 	raftConf.SnapshotInterval = 60 * time.Second
 	raftConf.LogLevel = "warn"
+	raftConf.TrailingLogs = 30
 
 	fsmStore := fsm.NewBadger(db)
 
@@ -76,7 +77,7 @@ func NewRaft(conf conf.ConfigRaft, port int, db *badger.DB) (*raft.Raft, error) 
 		panic(err)
 	}
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", raftBinAddr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", conf.ClusterAdvertise)
 	if err != nil {
 		panic(err)
 	}

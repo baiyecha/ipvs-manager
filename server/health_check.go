@@ -14,10 +14,10 @@ import (
 	"baiyecha/ipvs-manager/constant"
 	"baiyecha/ipvs-manager/model"
 	"baiyecha/ipvs-manager/server/store_handler"
+	"baiyecha/ipvs-manager/utils"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
-	"github.com/levigross/grequests"
 )
 
 func RunHealthCheck(badgerDB *badger.DB, r *raft.Raft) {
@@ -131,11 +131,9 @@ func httpCheck(url string, checkResType int, checkRes string) int {
 		},
 	}
 	defer tr.CloseIdleConnections()
-	res, err := grequests.Get(url, &grequests.RequestOptions{
-		HTTPClient: &http.Client{
-			Transport: tr,
-		},
-	})
+
+	res, statusCode, err := utils.GetRequest(url)
+
 	if err != nil {
 		fmt.Println(err)
 		return 1
@@ -145,12 +143,12 @@ func httpCheck(url string, checkResType int, checkRes string) int {
 		if checkRes == "" {
 			checkRes = "200"
 		}
-		return isMatch(strconv.Itoa(res.StatusCode), checkRes)
+		return isMatch(strconv.Itoa(statusCode), checkRes)
 	case 1:
 		if checkRes == "" {
 			checkRes = "ok"
 		}
-		return isMatch(res.String(), checkRes)
+		return isMatch(res, checkRes)
 	}
 	return 1
 }

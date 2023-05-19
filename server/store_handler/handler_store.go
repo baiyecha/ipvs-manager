@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/raft"
 	"github.com/labstack/echo/v4"
-	"github.com/levigross/grequests"
 
 	"baiyecha/ipvs-manager/constant"
 	"baiyecha/ipvs-manager/fsm"
@@ -87,20 +86,20 @@ func (h handler) Update(eCtx echo.Context) error {
 			"error": fmt.Sprintf("not found leader"),
 		})
 	}
-	res, err := grequests.Post(fmt.Sprintf("http://%s/store/",leaderAddr), &grequests.RequestOptions{
-		JSON: requestStore{
-			Key:   constant.IpvsStroreKey,
-			Value: form,
-		},
+
+	_, statusCode, err := utils.PostRequest(fmt.Sprintf("http://%s/store/", leaderAddr), requestStore{
+		Key:   constant.IpvsStroreKey,
+		Value: form,
 	})
+
 	if err != nil {
 		fmt.Print(err)
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": err,
 		})
 	}
-	if res.StatusCode != 200 {
-		fmt.Print(res.StatusCode)
+	if statusCode != 200 {
+		fmt.Print(statusCode)
 		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": err,
 		})

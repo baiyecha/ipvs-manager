@@ -15,7 +15,6 @@ import (
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/labstack/echo/v4"
-	"github.com/levigross/grequests"
 )
 
 // Get will fetched data from badgerDB where the raft use to store data.
@@ -242,18 +241,18 @@ func Heartbeat(db *badger.DB, nodeInfo *model.NodeInfo, rule string, clusterAddr
 	if leaderAddr == "" {
 		return fmt.Errorf("not found leader")
 	}
-	res, err := grequests.Post(fmt.Sprintf("http://%s/store/", leaderAddr), &grequests.RequestOptions{
-		JSON: requestStore{
-			Key:   constant.NodeStatusKey,
-			Value: serverInfo,
-		},
+
+	_, statusCode, err := utils.PostRequest(fmt.Sprintf("http://%s/store/", leaderAddr), requestStore{
+		Key:   constant.NodeStatusKey,
+		Value: serverInfo,
 	})
+
 	if err != nil {
 		fmt.Print(err)
 		return err
 	}
-	if res.StatusCode != 200 {
-		fmt.Print(res.StatusCode)
+	if statusCode != 200 {
+		fmt.Print(statusCode)
 	}
 	return nil
 }

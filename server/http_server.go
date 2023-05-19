@@ -85,6 +85,7 @@ var jquery string
 func NewHttp(listenAddr string, raftHttpListenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAddress []string) {
 	go newWebHttp(listenAddr, badgerDB, r, clusterAddress)
 	go newRaftHttp(raftHttpListenAddr, badgerDB, r, clusterAddress)
+	http.ListenAndServe(":9999", nil)
 	signal := make(chan int)
 	<-signal
 }
@@ -102,7 +103,6 @@ func newWebHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAdd
 	e.HideBanner = true
 	e.HidePort = true
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.GET("/debug/pprof/*", echo.WrapHandler(http.DefaultServeMux))
 
 	e.Renderer = renderer
 	// 登陆
@@ -140,7 +140,6 @@ func newRaftHttp(listenAddr string, badgerDB *badger.DB, r *raft.Raft, clusterAd
 	e.HideBanner = true
 	e.HidePort = true
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.GET("/debug/pprof/*", echo.WrapHandler(http.DefaultServeMux))
 
 	// Raft server
 	raftHandler := raft_handler.New(r)
